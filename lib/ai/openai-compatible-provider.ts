@@ -33,7 +33,10 @@ type ChatCompletionRequest = {
   temperature: number;
   top_p: number;
   max_tokens: number;
-  chat_template_kwargs: { thinking: boolean; reasoning_effort: ReasoningEffort };
+  // Reasoning controls are deepseek/NVIDIA-specific. Only sent when thinking is
+  // enabled, so non-reasoning models and other endpoints (Groq, OpenAI, ...)
+  // that reject the field still work.
+  chat_template_kwargs?: { thinking: boolean; reasoning_effort: ReasoningEffort };
   stream: false;
 };
 
@@ -112,7 +115,11 @@ export function buildOpenAiCompatibleRequest(
     temperature: config.temperature,
     top_p: config.topP,
     max_tokens: config.maxTokens,
-    chat_template_kwargs: { thinking: config.thinking, reasoning_effort: config.reasoningEffort },
+    // Only send reasoning controls when thinking is on. Disabling thinking yields
+    // a plain OpenAI payload that any fast model / endpoint accepts.
+    ...(config.thinking
+      ? { chat_template_kwargs: { thinking: true, reasoning_effort: config.reasoningEffort } }
+      : {}),
     stream: false,
   };
 }
