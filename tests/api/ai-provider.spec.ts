@@ -9,6 +9,12 @@ import {
   generateOllamaAiResponse,
   getOllamaConfig,
 } from '../../lib/ai/ollama-provider';
+import {
+  buildOpenAiCompatibleRequest,
+  generateOpenAiCompatibleAiResponse,
+  getOpenAiCompatibleConfig,
+  type OpenAiCompatibleConfig,
+} from '../../lib/ai/openai-compatible-provider';
 import type { AiAssistantRequest } from '../../lib/ai/types';
 import { createCandidateSessionFixture, uniqueTestEmail } from '../helpers/session-fixtures';
 
@@ -103,9 +109,9 @@ test.describe('AI provider selection', () => {
     }
   });
 
-  test('uses deterministic provider unless Ollama is explicitly configured', async () => {
+  test('uses the deterministic provider when AI_PROVIDER=deterministic', async () => {
     const originalProvider = process.env.AI_PROVIDER;
-    delete process.env.AI_PROVIDER;
+    process.env.AI_PROVIDER = 'deterministic';
 
     const result = await generateAiAssistantResponse(createAiRequest({
       candidateMessage: 'How should I debug test failures?',
@@ -264,6 +270,161 @@ test.describe('AI provider selection', () => {
         timeoutMs: 7000,
       },
     })).rejects.toThrow('Ollama request failed (502)');
+  });
+
+  const openAiCompatibleConfig = (overrides: Partial<OpenAiCompatibleConfig> = {}): OpenAiCompatibleConfig => ({
+    apiKey: 'nvapi-test-key',
+    baseUrl: 'https://integrate.api.nvidia.com/v1',
+    model: 'deepseek-ai/deepseek-v4-flash',
+    temperature: 1,
+    topP: 0.95,
+    maxTokens: 4096,
+    thinking: true,
+    reasoningEffort: 'low',
+    timeoutMs: 7000,
+    maxRetries: 1,
+    ...overrides,
+  });
+
+  test('openai-compatible config defaults to the free NVIDIA endpoint + deepseek-v4-flash', () => {
+    const saved = {
+      key: process.env.AI_API_KEY,
+      base: process.env.AI_BASE_URL,
+      model: process.env.AI_MODEL,
+      effort: process.env.AI_REASONING_EFFORT,
+      nvidia: process.env.NVIDIA_API_KEY,
+      openai: process.env.OPENAI_API_KEY,
+      openaiBase: process.env.OPENAI_BASE_URL,
+    };
+    delete process.env.AI_API_KEY;
+    delete process.env.AI_BASE_URL;
+    delete process.env.AI_MODEL;
+    delete process.env.AI_REASONING_EFFORT;
+    delete process.env.NVIDIA_API_KEY;
+    delete process.env.OPENAI_API_KEY;
+    delete process.env.OPENAI_BASE_URL;
+
+    try {
+      const config = getOpenAiCompatibleConfig();
+      expect(config.baseUrl).toBe('https://integrate.api.nvidia.com/v1');
+      expect(config.model).toBe('deepseek-ai/deepseek-v4-flash');
+      expect(config.reasoningEffort).toBe('low');
+    } finally {
+      for (const [name, value] of [
+        ['AI_API_KEY', saved.key],
+        ['AI_BASE_URL', saved.base],
+        ['AI_MODEL', saved.model],
+        ['AI_REASONING_EFFORT', saved.effort],
+        ['NVIDIA_API_KEY', saved.nvidia],
+        ['OPENAI_API_KEY', saved.openai],
+        ['OPENAI_BASE_URL', saved.openaiBase],
+      ] as const) {
+        if (value === undefined) delete process.env[name];
+        else process.env[name] = value;
+      }
+    }
+  });
+
+  test('openai-compatible config reads NVIDIA_API_KEY and OPENAI_API_KEY as key fallbacks', () => {
+    const saved = { key: process.env.AI_API_KEY, nvidia: process.env.NVIDIA_API_KEY };
+    delete process.env.AI_API_KEY;
+    process.env.NVIDIA_API_KEY = 'nvapi-fallback';
+
+    try {
+      expect(getOpenAiCompatibleConfig().apiKey).toBe('nvapi-fallback');
+    } finally {
+      if (saved.key === undefined) delete process.env.AI_API_KEY;
+      else process.env.AI_API_KEY = saved.key;
+      if (saved.nvidia === undefined) delete process.env.NVIDIA_API_KEY;
+      else process.env.NVIDIA_API_KEY = saved.nvidia;
+    }
+  });
+
+  test('builds an OpenAI-compatible chat payload with system + user messages and reasoning kwargs', () => {
+    const body = buildOpenAiCompatibleRequest(createAiRequest(), openAiCompatibleConfig());
+
+    expect(body.model).toBe('deepseek-ai/deepseek-v4-flash');
+    expect(body.stream).toBe(false);
+    expect(body.messages).toHaveLength(2);
+    expect(body.messages[0].role).toBe('system');
+    expect(body.messages[0].content).toContain('Hirewave AI coding assistant');
+    expect(body.messages[1].role).toBe('user');
+    expect(body.messages[1].content).toContain('Candidate request: "Where should I start?"');
+    expect(body.messages[1].content).toContain('Debug the Broken Checkout Flow');
+    expect(body.chat_template_kwargs).toEqual({ thinking: true, reasoning_effort: 'low' });
+  });
+
+  test('sends OpenAI-compatible request, returns content, hides reasoning, maps provider tokens', async () => {
+    const calls: Array<{ url: string; init: RequestInit }> = [];
+    const fetchImpl = async (url: string | URL | Request, init?: RequestInit) => {
+      calls.push({ url: String(url), init: init || {} });
+      return new Response(JSON.stringify({
+        model: 'deepseek-ai/deepseek-v4-flash',
+        choices: [
+          {
+            finish_reason: 'stop',
+            message: {
+              role: 'assistant',
+              content: 'Inspect cart validation first, then rerun npm test.',
+              reasoning: 'Internal chain-of-thought that must never reach the candidate.',
+            },
+          },
+        ],
+        usage: { prompt_tokens: 420, completion_tokens: 24 },
+      }), { status: 200 });
+    };
+
+    const result = await generateOpenAiCompatibleAiResponse({
+      request: createAiRequest({ candidateMessage: 'What should I inspect first?' }),
+      fetchImpl,
+      config: openAiCompatibleConfig(),
+    });
+
+    expect(result.provider).toBe('openai-compatible');
+    expect(result.model).toBe('deepseek-ai/deepseek-v4-flash');
+    expect(result.content).toContain('cart validation');
+    expect(result.content).not.toContain('chain-of-thought');
+
+    expect(calls).toHaveLength(1);
+    expect(calls[0].url).toBe('https://integrate.api.nvidia.com/v1/chat/completions');
+    expect(calls[0].init.method).toBe('POST');
+    expect((calls[0].init.headers as Record<string, string>).Authorization).toBe('Bearer nvapi-test-key');
+
+    const body = JSON.parse(String(calls[0].init.body));
+    expect(body.messages[1].content).toContain('What should I inspect first?');
+
+    expect(result.usage?.promptTokens).toBe(420);
+    expect(result.usage?.completionTokens).toBe(24);
+    expect(result.usage?.totalTokens).toBe(444);
+    expect(result.usage?.tokenSource).toBe('provider');
+    expect(result.usage?.includedFiles).toContain('src/cart.ts');
+
+    // Reasoning is captured for audit but kept out of candidate-visible content.
+    expect(result.metadata.reasoning).toContain('chain-of-thought');
+    expect(result.metadata.finishReason).toBe('stop');
+  });
+
+  test('throws when the OpenAI-compatible provider has no API key', async () => {
+    await expect(generateOpenAiCompatibleAiResponse({
+      request: createAiRequest({ candidateMessage: 'hello' }),
+      fetchImpl: async () => new Response('{}', { status: 200 }),
+      config: openAiCompatibleConfig({ apiKey: '' }),
+    })).rejects.toThrow('missing AI_API_KEY');
+  });
+
+  test('retries OpenAI-compatible transient failures then surfaces status context', async () => {
+    let attempts = 0;
+    const fetchImpl = async () => {
+      attempts += 1;
+      return new Response('rate limited', { status: 429, statusText: 'Too Many Requests' });
+    };
+
+    await expect(generateOpenAiCompatibleAiResponse({
+      request: createAiRequest({ candidateMessage: 'hello' }),
+      fetchImpl,
+      config: openAiCompatibleConfig({ maxRetries: 1 }),
+    })).rejects.toThrow('OpenAI-compatible request failed (429)');
+    expect(attempts).toBe(2);
   });
 
   test('session AI route stores provider usage and safety metadata', async ({ request }) => {

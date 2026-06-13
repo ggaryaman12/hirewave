@@ -9,7 +9,7 @@ export const AI_COLLABORATION_DIMENSIONS = [
   'Token Efficiency',
 ] as const;
 
-export type AiProviderName = 'deterministic' | 'ollama';
+export type AiProviderName = 'deterministic' | 'ollama' | 'openai-compatible';
 
 export type AiFileContext = {
   path: string;

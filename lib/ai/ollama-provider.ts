@@ -1,5 +1,11 @@
-import type { AiAssistantRequest, AiFileContext, AiProviderResult } from '@/lib/ai/types';
+import type { AiAssistantRequest, AiProviderResult } from '@/lib/ai/types';
 import { buildTokenUsage } from '@/lib/ai/token-usage';
+import {
+  HIREWAVE_ASSISTANT_SYSTEM_PROMPT,
+  buildAssistantPrompt,
+  buildAssistantSafetyFlags,
+  includedFiles,
+} from '@/lib/ai/prompt';
 
 type FetchLike = (input: string | URL | Request, init?: RequestInit) => Promise<Response>;
 
@@ -19,21 +25,13 @@ type OllamaGenerateRequest = {
 const DEFAULT_OLLAMA_BASE_URL = 'http://yeloai.yelo.solutions';
 const DEFAULT_OLLAMA_MODEL = 'minimax-m2.5:cloud';
 const DEFAULT_TIMEOUT_MS = 30000;
-const MAX_FILE_CHARS = 2500;
-const MAX_CONTEXT_CHARS = 12000;
-const MAX_COMMAND_CHARS = 1200;
-const MAX_AI_MESSAGE_CHARS = 900;
 
-export const HIREWAVE_OLLAMA_SYSTEM_PROMPT = [
-  'You are the Hirewave AI coding assistant inside a technical assessment.',
-  'Help the candidate reason through realistic engineering work using the files and test evidence provided.',
-  'Use the fixed Hirewave AI collaboration rubric only as coaching context; never score the candidate or reveal evaluator logic.',
-  'Be concise and practical. Suggest inspection steps, debugging strategy, terminal commands to run, and code-level fixes when useful.',
-  'The candidate has an MVP terminal. Prefer supported commands from policy, such as npm test, ls src, cat <path>, and pwd.',
-  'If the candidate request is unclear, nonsensical, or too low-signal, ask for a clearer question instead of inferring progress or inventing facts.',
-  'Do not claim you ran commands or changed files. The candidate must verify all output with the runner.',
-  'Do not produce hiring recommendations or evaluation scores for the candidate.',
-].join('\n');
+// Retained for backward compatibility; the prompt now lives in lib/ai/prompt.ts
+// and is shared by every hosted provider.
+export const HIREWAVE_OLLAMA_SYSTEM_PROMPT = HIREWAVE_ASSISTANT_SYSTEM_PROMPT;
+
+// Retained export. buildOllamaPrompt is the shared assessment prompt builder.
+export const buildOllamaPrompt = buildAssistantPrompt;
 
 function normalizeBaseUrl(value: string) {
   return value.replace(/\/+$/, '');
@@ -42,65 +40,6 @@ function normalizeBaseUrl(value: string) {
 function toInt(value: string | undefined, fallback: number) {
   const parsed = Number.parseInt(value || '', 10);
   return Number.isFinite(parsed) ? parsed : fallback;
-}
-
-function truncate(value: string, max: number) {
-  if (value.length <= max) return value;
-  return `${value.slice(0, max)}\n...[truncated]`;
-}
-
-function includedFiles(request: AiAssistantRequest) {
-  const selectedPath = request.workspace.selectedFilePath;
-  const selected = request.workspace.files.filter((file) => file.path === selectedPath || file.isSelected);
-  const recentlyEdited = request.workspace.files.filter((file) => file.isRecentlyEdited);
-  const fallback = request.workspace.files.slice(0, 2);
-  const files = [...selected, ...recentlyEdited, ...fallback];
-  const unique = new Map<string, AiFileContext>();
-
-  for (const file of files) {
-    unique.set(file.path, file);
-  }
-
-  return Array.from(unique.values()).slice(0, 4);
-}
-
-function fileHeader(file: AiFileContext) {
-  const tags = [
-    file.isSelected ? 'selected' : undefined,
-    file.isRecentlyEdited ? 'recently edited' : undefined,
-    file.version ? `version ${file.version}` : undefined,
-  ].filter(Boolean).join(', ');
-
-  return `--- ${file.path}${tags ? `\n[${tags}]` : ''}`;
-}
-
-function commandEvidence(request: AiAssistantRequest) {
-  if (!request.activity.recentCommands.length) return '(no recent command evidence)';
-
-  return request.activity.recentCommands
-    .slice(-3)
-    .map((command) => [
-      `$ ${command.command}`,
-      `exitCode: ${command.exitCode ?? 'unknown'}`,
-      truncate(command.outputSummary, MAX_COMMAND_CHARS),
-    ].join('\n'))
-    .join('\n\n');
-}
-
-function recentAiContext(request: AiAssistantRequest) {
-  if (!request.activity.recentAiMessages.length) return '(no recent AI context)';
-
-  return request.activity.recentAiMessages
-    .slice(-4)
-    .map((message) => `${message.role}: ${truncate(message.content, MAX_AI_MESSAGE_CHARS)}`)
-    .join('\n');
-}
-
-function policyText(request: AiAssistantRequest) {
-  return [
-    `Allowed help: ${request.policy.allowedHelp}`,
-    ...request.policy.forbiddenHelp.map((rule) => `- ${rule}`),
-  ].join('\n');
 }
 
 export function getOllamaConfig(): OllamaProviderConfig {
@@ -124,69 +63,16 @@ export function getOllamaConfig(): OllamaProviderConfig {
   };
 }
 
-export function buildOllamaPrompt(request: AiAssistantRequest) {
-  const files = includedFiles(request);
-  const fileContext = files
-    .map((file) => `${fileHeader(file)}\n${truncate(file.content, MAX_FILE_CHARS)}`)
-    .join('\n\n');
-
-  return truncate([
-    'You are helping with a live Hirewave engineering assessment.',
-    `Candidate request: ${JSON.stringify(request.candidateMessage)}`,
-    '',
-    `Challenge: ${request.challenge.title}`,
-    `Role: ${request.challenge.role}`,
-    '',
-    'Challenge instructions:',
-    truncate(request.challenge.instructions, 1800),
-    '',
-    'AI collaboration rubric focus:',
-    ...request.challenge.rubricDimensions.map((dimension) => `- ${dimension}`),
-    '',
-    'Recent command evidence:',
-    commandEvidence(request),
-    '',
-    'Recent AI context:',
-    recentAiContext(request),
-    '',
-    'Latest test summary:',
-    request.activity.latestTestSummary || '(no latest test summary)',
-    '',
-    'Workspace context:',
-    fileContext || '(no files available)',
-    '',
-    'Policy:',
-    policyText(request),
-    '',
-    'Answer for the candidate. Guide their debugging and implementation work without scoring them or exposing evaluator-only criteria.',
-  ].join('\n'), MAX_CONTEXT_CHARS);
-}
-
 export function buildOllamaGenerateRequest(
   request: AiAssistantRequest,
   config: OllamaProviderConfig,
 ): OllamaGenerateRequest {
   return {
     model: config.model,
-    system: HIREWAVE_OLLAMA_SYSTEM_PROMPT,
-    prompt: buildOllamaPrompt(request),
+    system: HIREWAVE_ASSISTANT_SYSTEM_PROMPT,
+    prompt: buildAssistantPrompt(request),
     stream: false,
   };
-}
-
-function buildSafetyFlags(request: AiAssistantRequest) {
-  const message = request.candidateMessage.toLowerCase();
-  const flags: string[] = [];
-
-  if (/\b(score|grade|evaluate|rating|hire|recommendation)\b/.test(message)) {
-    flags.push('candidate_requested_evaluation');
-  }
-
-  if (/\b(secret|token|password|credential|api key)\b/.test(message)) {
-    flags.push('candidate_requested_sensitive_data');
-  }
-
-  return flags;
 }
 
 export async function generateOllamaAiResponse(input: {
@@ -196,7 +82,7 @@ export async function generateOllamaAiResponse(input: {
 }): Promise<AiProviderResult> {
   const config = input.config || getOllamaConfig();
   const fetchImpl = input.fetchImpl || fetch;
-  const prompt = buildOllamaPrompt(input.request);
+  const prompt = buildAssistantPrompt(input.request);
   const startedAt = Date.now();
   const controller = new AbortController();
   const timeout = setTimeout(() => controller.abort(), config.timeoutMs);
@@ -246,7 +132,7 @@ export async function generateOllamaAiResponse(input: {
           providerCompletionTokens: parsed.eval_count,
         }),
       },
-      safetyFlags: buildSafetyFlags(input.request),
+      safetyFlags: buildAssistantSafetyFlags(input.request),
       metadata: {
         configuredModel: config.model,
         baseUrl: config.baseUrl,

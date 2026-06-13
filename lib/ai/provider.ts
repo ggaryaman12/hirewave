@@ -1,6 +1,23 @@
 import { generateOllamaAiResponse } from '@/lib/ai/ollama-provider';
+import { generateOpenAiCompatibleAiResponse } from '@/lib/ai/openai-compatible-provider';
 import { buildTokenUsage } from '@/lib/ai/token-usage';
-import type { AiAssistantRequest, AiProviderResult } from '@/lib/ai/types';
+import type { AiAssistantRequest, AiProviderName, AiProviderResult } from '@/lib/ai/types';
+
+// ============================================================================
+// MASTER AI FLOW SWITCH
+// ----------------------------------------------------------------------------
+// Single place to choose which assistant flow runs. Flip this one value:
+//   'openai-compatible' -> NEW flow: NVIDIA Build / OpenAI-compatible endpoint
+//   'ollama'            -> EXISTING flow: Yelo-hosted Ollama endpoint
+//   'deterministic'     -> local rule-based responses (used by tests)
+// The AI_PROVIDER env var, when set, OVERRIDES this switch (so tests can force
+// deterministic and prod can override per-deploy without a code change).
+// ============================================================================
+export const AI_FLOW_MASTER_SWITCH: AiProviderName = 'openai-compatible';
+
+function resolveProvider(): string {
+  return (process.env.AI_PROVIDER || AI_FLOW_MASTER_SWITCH).toLowerCase();
+}
 
 function includedFiles(request: AiAssistantRequest) {
   const selectedPath = request.workspace.selectedFilePath;
@@ -111,8 +128,17 @@ function generateDeterministicAiResponse(request: AiAssistantRequest): AiProvide
 }
 
 export async function generateAiAssistantResponse(request: AiAssistantRequest): Promise<AiProviderResult> {
-  if ((process.env.AI_PROVIDER || 'deterministic').toLowerCase() === 'ollama') {
+  const provider = resolveProvider();
+
+  if (provider === 'ollama') {
     return generateOllamaAiResponse({ request });
+  }
+
+  // `nvidia` is an alias for the generic OpenAI-compatible provider, which
+  // targets the NVIDIA Build endpoint by default but works with any
+  // OpenAI-compatible base URL / model.
+  if (provider === 'openai-compatible' || provider === 'nvidia') {
+    return generateOpenAiCompatibleAiResponse({ request });
   }
 
   return generateDeterministicAiResponse(request);
