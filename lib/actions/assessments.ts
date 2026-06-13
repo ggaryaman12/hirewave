@@ -19,7 +19,7 @@ const assessmentSchema = z.object({
   role: z.string().min(2).max(80),
   seniority: z.string().min(2).max(40),
   durationMinutes: z.coerce.number().int().min(15).max(180),
-  aiMode: z.enum(['allowed', 'required', 'disabled']),
+  aiMode: z.enum(['allowed', 'required', 'disabled', 'agent']),
   challengeId: z.string().min(1),
 });
 

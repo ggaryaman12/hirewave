@@ -28,6 +28,19 @@ type AiMessage = {
   tokenUsage?: TokenUsage | null;
 };
 
+type AgentChatMessage = { id: string; role: string; content: string };
+
+type AgentProposalView = {
+  id: string;
+  path: string;
+  rationale: string | null;
+  status: string;
+  decisionReason: string | null;
+  diff: CodeFileDiff | null;
+  createdAt: string;
+  decidedAt: string | null;
+};
+
 type CommandRun = {
   id: string;
   command: string;
@@ -75,6 +88,7 @@ type SessionPayload = {
   files: SessionFile[];
   aiMessages: AiMessage[];
   commandRuns: CommandRun[];
+  agentProposals?: AgentProposalView[];
   reportId: string | null;
 };
 
@@ -87,9 +101,17 @@ export function AssessmentRoom({
 }) {
   const router = useRouter();
   const closed = ['submitted', 'expired', 'report_ready'].includes(initialSession.status);
+  const isAgentMode = initialSession.assessment.aiMode === 'agent';
   const [files, setFiles] = useState(initialSession.files);
   const [activePath, setActivePath] = useState(initialSession.files[0]?.path || '');
   const [messages, setMessages] = useState(initialSession.aiMessages);
+  const [agentMessages, setAgentMessages] = useState<AgentChatMessage[]>(
+    initialSession.aiMessages.map((message) => ({ id: message.id, role: message.role, content: message.content })),
+  );
+  const [agentProposals, setAgentProposals] = useState<AgentProposalView[]>(initialSession.agentProposals || []);
+  const [agentPrompt, setAgentPrompt] = useState('');
+  const [agentPending, setAgentPending] = useState(false);
+  const [decisionPendingId, setDecisionPendingId] = useState<string | null>(null);
   const [commands, setCommands] = useState(initialSession.commandRuns);
   const [prompt, setPrompt] = useState('');
   const [terminalCommand, setTerminalCommand] = useState('');
@@ -252,6 +274,65 @@ export function AssessmentRoom({
     } finally {
       setPendingPrompt(null);
       setAiPending(false);
+    }
+  }
+
+  async function sendAgentMessage() {
+    const trimmed = agentPrompt.trim();
+    if (!trimmed || closed || agentPending) return;
+    setAgentPrompt('');
+    setAgentMessages((current) => [...current, { id: `pending-${Date.now()}`, role: 'user', content: trimmed }]);
+    setAgentPending(true);
+    try {
+      const response = await fetch(`/api/session/${sessionToken}/agent`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ message: trimmed }),
+      });
+      if (!response.ok) throw new Error('Agent request failed');
+      const body = await response.json();
+      setAgentMessages((current) => [
+        ...current,
+        ...(body.assistantMessages as AgentChatMessage[]).map((message) => ({ ...message, role: 'assistant' })),
+      ]);
+      setAgentProposals(body.pendingProposals as AgentProposalView[]);
+    } catch (error) {
+      setAgentPrompt(trimmed);
+      logEvent('error_occurred', { message: error instanceof Error ? error.message : 'Agent request failed' });
+    } finally {
+      setAgentPending(false);
+    }
+  }
+
+  async function decideProposal(proposal: AgentProposalView, decision: 'approve' | 'reject') {
+    if (closed || decisionPendingId) return;
+    const reason = decision === 'reject' ? window.prompt('Why are you rejecting this edit? (optional)') ?? undefined : undefined;
+    setDecisionPendingId(proposal.id);
+    try {
+      const response = await fetch(`/api/session/${sessionToken}/agent`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ proposalId: proposal.id, decision, reason }),
+      });
+      if (!response.ok) throw new Error('Decision failed');
+      const body = await response.json();
+      setAgentProposals(body.pendingProposals as AgentProposalView[]);
+
+      // Reflect an approved agent edit in the workspace immediately.
+      if (decision === 'approve' && proposal.diff) {
+        const newContent = proposal.diff.currentContent;
+        setFiles((current) =>
+          current.some((file) => file.path === proposal.path)
+            ? current.map((file) =>
+                file.path === proposal.path ? { ...file, content: newContent, version: file.version + 1 } : file,
+              )
+            : [...current, { path: proposal.path, language: proposal.diff?.language || 'text', content: newContent, version: 1 }],
+        );
+      }
+    } catch (error) {
+      logEvent('error_occurred', { message: error instanceof Error ? error.message : 'Decision failed' });
+    } finally {
+      setDecisionPendingId(null);
     }
   }
 
@@ -424,6 +505,19 @@ export function AssessmentRoom({
           </section>
         </main>
 
+        {isAgentMode ? (
+          <AgentPanel
+            messages={agentMessages}
+            proposals={agentProposals}
+            prompt={agentPrompt}
+            setPrompt={setAgentPrompt}
+            onSend={sendAgentMessage}
+            pending={agentPending}
+            closed={closed}
+            decisionPendingId={decisionPendingId}
+            onDecide={decideProposal}
+          />
+        ) : (
         <aside className="flex min-h-[720px] flex-col border-l border-white/10 bg-[#151515] lg:min-h-0 lg:overflow-hidden">
           <div className="flex h-11 items-center gap-2 border-b border-white/10 px-4 text-xs font-bold uppercase tracking-[0.18em] text-white/45">
             <Bot className="h-4 w-4" />
@@ -478,6 +572,7 @@ export function AssessmentRoom({
             </button>
           </div>
         </aside>
+        )}
       </div>
     </div>
   );
@@ -710,6 +805,167 @@ function AssistantThinking() {
       </div>
       <div className="mt-3 h-1 overflow-hidden rounded-full bg-white/10">
         <span className="block h-full w-1/2 animate-pulse rounded-full bg-[#f15a29]" />
+      </div>
+    </div>
+  );
+}
+
+function AgentPanel({
+  messages,
+  proposals,
+  prompt,
+  setPrompt,
+  onSend,
+  pending,
+  closed,
+  decisionPendingId,
+  onDecide,
+}: {
+  messages: AgentChatMessage[];
+  proposals: AgentProposalView[];
+  prompt: string;
+  setPrompt: (value: string) => void;
+  onSend: () => void;
+  pending: boolean;
+  closed: boolean;
+  decisionPendingId: string | null;
+  onDecide: (proposal: AgentProposalView, decision: 'approve' | 'reject') => void;
+}) {
+  const pendingProposals = proposals.filter((proposal) => proposal.status === 'pending');
+
+  return (
+    <aside className="flex min-h-[720px] flex-col border-l border-white/10 bg-[#151515] lg:min-h-0 lg:overflow-hidden">
+      <div className="flex h-11 items-center gap-2 border-b border-white/10 px-4 text-xs font-bold uppercase tracking-[0.18em] text-white/45">
+        <Bot className="h-4 w-4" />
+        AI agent
+        <span className="ml-auto rounded-full bg-[#f15a29]/20 px-2 py-0.5 text-[10px] text-[#f8b39c]">agent mode</span>
+      </div>
+
+      <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain p-4">
+        {messages.length === 0 && !pending ? (
+          <div className="rounded-lg border border-dashed border-white/15 p-4 text-sm leading-6 text-white/55">
+            Delegate a task. The agent inspects the workspace and proposes edits — you review and approve each diff. Your steering and review are part of the evaluation.
+          </div>
+        ) : (
+          <div className="grid gap-3">
+            {messages.map((message) => (
+              <div
+                key={message.id}
+                className={cn(
+                  'min-w-0 break-words rounded-lg p-3 text-sm leading-6',
+                  message.role === 'user' ? 'bg-[#f15a29] text-white' : 'border border-white/10 bg-white/[0.08] text-white/80',
+                )}
+              >
+                <p className="mb-2 text-[10px] font-black uppercase tracking-[0.16em] opacity-60">
+                  {message.role === 'user' ? 'Candidate' : 'Hirewave Agent'}
+                </p>
+                {message.role === 'user' ? <p className="whitespace-pre-wrap">{message.content}</p> : <MarkdownMessage content={message.content} />}
+              </div>
+            ))}
+            {pending && <AssistantThinking />}
+          </div>
+        )}
+
+        {pendingProposals.length > 0 && (
+          <div className="mt-4 grid gap-3">
+            <p className="text-[10px] font-black uppercase tracking-[0.16em] text-white/45">
+              Proposed edits ({pendingProposals.length}) — review before applying
+            </p>
+            {pendingProposals.map((proposal) => (
+              <ProposalCard
+                key={proposal.id}
+                proposal={proposal}
+                disabled={closed || decisionPendingId !== null}
+                deciding={decisionPendingId === proposal.id}
+                onDecide={onDecide}
+              />
+            ))}
+          </div>
+        )}
+      </div>
+
+      <div className="border-t border-white/10 p-3">
+        <textarea
+          value={prompt}
+          onChange={(event) => setPrompt(event.target.value)}
+          disabled={closed}
+          rows={3}
+          placeholder="Delegate a task, e.g. 'Find why the checkout tests fail and propose a fix.'"
+          className="w-full resize-none rounded-md border border-white/10 bg-[#101010] p-3 text-sm text-white outline-none placeholder:text-white/30 disabled:opacity-50"
+        />
+        <button
+          type="button"
+          disabled={!prompt.trim() || closed || pending}
+          onClick={onSend}
+          className="mt-2 inline-flex h-9 w-full items-center justify-center gap-2 rounded-md bg-white text-sm font-black text-black disabled:cursor-not-allowed disabled:opacity-45"
+        >
+          <Send className="h-4 w-4" />
+          {pending ? 'Agent working' : 'Send to agent'}
+        </button>
+      </div>
+    </aside>
+  );
+}
+
+function ProposalCard({
+  proposal,
+  disabled,
+  deciding,
+  onDecide,
+}: {
+  proposal: AgentProposalView;
+  disabled: boolean;
+  deciding: boolean;
+  onDecide: (proposal: AgentProposalView, decision: 'approve' | 'reject') => void;
+}) {
+  const [expanded, setExpanded] = useState(false);
+
+  return (
+    <div className="rounded-lg border border-[#f15a29]/25 bg-[#f15a29]/[0.05]">
+      <div className="flex flex-wrap items-center justify-between gap-2 border-b border-white/10 px-3 py-2">
+        <span className="truncate font-mono text-xs text-white/80">{proposal.path}</span>
+        {proposal.diff && (
+          <span className="flex items-center gap-2 font-mono text-[10px]">
+            <span className="rounded bg-emerald-500/15 px-1.5 py-0.5 text-emerald-200">+{proposal.diff.additions}</span>
+            <span className="rounded bg-red-500/15 px-1.5 py-0.5 text-red-200">-{proposal.diff.deletions}</span>
+          </span>
+        )}
+      </div>
+      {proposal.rationale && <p className="px-3 py-2 text-xs leading-5 text-white/65">{proposal.rationale}</p>}
+
+      <div className="px-3 pb-2">
+        <button
+          type="button"
+          onClick={() => setExpanded((value) => !value)}
+          className="text-[11px] font-bold text-white/55 underline-offset-2 hover:text-white hover:underline"
+        >
+          {expanded ? 'Hide diff' : 'Review diff'}
+        </button>
+      </div>
+      {expanded && proposal.diff && (
+        <div className="max-h-72 overflow-auto border-t border-white/10">
+          <SplitDiffViewer diff={proposal.diff} />
+        </div>
+      )}
+
+      <div className="flex gap-2 border-t border-white/10 p-3">
+        <button
+          type="button"
+          disabled={disabled}
+          onClick={() => onDecide(proposal, 'approve')}
+          className="inline-flex h-8 flex-1 items-center justify-center gap-1.5 rounded-md bg-emerald-500 text-xs font-black text-black disabled:cursor-not-allowed disabled:opacity-45"
+        >
+          <CheckCircle2 className="h-3.5 w-3.5" />
+          {deciding ? 'Working' : 'Approve'}
+        </button>
+        <button
+          type="button"
+          disabled={disabled}
+          onClick={() => onDecide(proposal, 'reject')}
+          className="inline-flex h-8 flex-1 items-center justify-center rounded-md border border-white/15 text-xs font-black text-white/75 hover:bg-white/10 disabled:cursor-not-allowed disabled:opacity-45"
+        >
+          Reject
+        </button>
       </div>
     </div>
   );

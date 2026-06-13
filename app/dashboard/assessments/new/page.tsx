@@ -118,6 +118,7 @@ export default async function NewAssessmentPage({
                     <option value="allowed">Allowed and logged</option>
                     <option value="required">Required</option>
                     <option value="disabled">Disabled</option>
+                    <option value="agent">Agent mode (AI proposes, candidate approves)</option>
                   </select>
                 </label>
               </div>

@@ -1,4 +1,5 @@
 import { db } from '@/lib/db';
+import { serializeProposal } from '@/lib/agent/proposals';
 import { readTokenUsage } from '@/lib/ai/token-usage';
 import { parseJson } from '@/lib/json';
 import { tokenHash } from '@/lib/tokens';
@@ -21,6 +22,7 @@ export async function getSessionByToken(sessionToken: string) {
       aiMessages: { orderBy: { createdAt: 'asc' } },
       commandRuns: { orderBy: { startedAt: 'asc' }, include: { testResults: true } },
       events: { orderBy: { occurredAt: 'asc' } },
+      agentProposals: { orderBy: { createdAt: 'asc' } },
       evaluationReport: true,
     },
   });
@@ -279,6 +281,7 @@ export function serializeSession(session: NonNullable<Awaited<ReturnType<typeof 
       payload: parseJson<Record<string, unknown>>(event.payloadJson, {}),
       occurredAt: event.occurredAt.toISOString(),
     })),
+    agentProposals: session.agentProposals.map(serializeProposal),
     reportId: session.evaluationReport?.id || null,
   };
 }
