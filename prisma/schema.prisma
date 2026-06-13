@@ -1,0 +1,233 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id          String            @id @default(cuid())
+  name        String
+  email       String            @unique
+  createdAt   DateTime          @default(now())
+  updatedAt   DateTime          @updatedAt
+  memberships WorkspaceMember[]
+  assessments Assessment[]      @relation("AssessmentCreator")
+}
+
+model Workspace {
+  id          String            @id @default(cuid())
+  name        String
+  slug        String            @unique
+  createdAt   DateTime          @default(now())
+  updatedAt   DateTime          @updatedAt
+  members     WorkspaceMember[]
+  assessments Assessment[]
+  candidates  Candidate[]
+}
+
+model WorkspaceMember {
+  id          String    @id @default(cuid())
+  workspaceId String
+  userId      String
+  role        String
+  createdAt   DateTime  @default(now())
+  workspace   Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([workspaceId, userId])
+}
+
+model Assessment {
+  id              String             @id @default(cuid())
+  workspaceId     String
+  challengeId     String
+  createdById     String
+  title           String
+  role            String
+  seniority       String
+  durationMinutes Int
+  aiMode          String
+  allowedToolsJson String
+  rubricJson      String
+  status          String             @default("active")
+  createdAt       DateTime           @default(now())
+  updatedAt       DateTime           @updatedAt
+  workspace       Workspace          @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  challenge       Challenge          @relation(fields: [challengeId], references: [id])
+  createdBy       User               @relation("AssessmentCreator", fields: [createdById], references: [id])
+  inviteLinks     InviteLink[]
+  sessions        CandidateSession[]
+}
+
+model Challenge {
+  id              String          @id @default(cuid())
+  slug            String          @unique
+  title           String
+  role            String
+  stackJson       String
+  durationMinutes Int
+  scenario        String
+  instructions    String
+  difficulty      String
+  rubricJson      String
+  createdAt       DateTime        @default(now())
+  updatedAt       DateTime        @updatedAt
+  files           ChallengeFile[]
+  assessments     Assessment[]
+}
+
+model ChallengeFile {
+  id          String    @id @default(cuid())
+  challengeId String
+  path        String
+  language    String
+  content     String
+  isReadonly  Boolean   @default(false)
+  sortOrder   Int       @default(0)
+  challenge   Challenge @relation(fields: [challengeId], references: [id], onDelete: Cascade)
+
+  @@unique([challengeId, path])
+}
+
+model Candidate {
+  id          String             @id @default(cuid())
+  workspaceId String
+  name        String
+  email       String
+  createdAt   DateTime           @default(now())
+  workspace   Workspace          @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  sessions    CandidateSession[]
+
+  @@index([workspaceId, email])
+}
+
+model CandidateSession {
+  id               String            @id @default(cuid())
+  assessmentId     String
+  candidateId      String
+  inviteLinkId     String?
+  sessionTokenHash String            @unique
+  status           String            @default("created")
+  startedAt        DateTime?
+  submittedAt      DateTime?
+  expiresAt        DateTime
+  lastEventAt      DateTime?
+  createdAt        DateTime          @default(now())
+  updatedAt        DateTime          @updatedAt
+  assessment       Assessment        @relation(fields: [assessmentId], references: [id], onDelete: Cascade)
+  candidate        Candidate         @relation(fields: [candidateId], references: [id], onDelete: Cascade)
+  inviteLink       InviteLink?       @relation(fields: [inviteLinkId], references: [id])
+  events           SessionEvent[]
+  fileSnapshots    FileSnapshot[]
+  commandRuns      CommandRun[]
+  aiMessages       AiMessage[]
+  testResults      TestResult[]
+  evaluationReport EvaluationReport?
+}
+
+model SessionEvent {
+  id         String           @id @default(cuid())
+  sessionId  String
+  type       String
+  actor      String
+  payloadJson String
+  occurredAt DateTime         @default(now())
+  session    CandidateSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+
+  @@index([sessionId, occurredAt])
+}
+
+model FileSnapshot {
+  id        String           @id @default(cuid())
+  sessionId String
+  path      String
+  content   String
+  language  String
+  version   Int
+  source    String
+  createdAt DateTime         @default(now())
+  session   CandidateSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+
+  @@index([sessionId, path, version])
+}
+
+model CommandRun {
+  id         String           @id @default(cuid())
+  sessionId  String
+  command    String
+  status     String
+  output     String
+  exitCode   Int?
+  startedAt  DateTime         @default(now())
+  finishedAt DateTime?
+  session    CandidateSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  testResults TestResult[]
+}
+
+model AiMessage {
+  id          String           @id @default(cuid())
+  sessionId   String
+  role        String
+  content     String
+  model       String?
+  metadataJson String?
+  createdAt   DateTime         @default(now())
+  session     CandidateSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+}
+
+model TestResult {
+  id           String           @id @default(cuid())
+  commandRunId String
+  sessionId    String
+  name         String
+  status       String
+  message      String?
+  durationMs   Int?
+  createdAt    DateTime         @default(now())
+  commandRun   CommandRun       @relation(fields: [commandRunId], references: [id], onDelete: Cascade)
+  session      CandidateSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+}
+
+model EvaluationReport {
+  id                    String           @id @default(cuid())
+  sessionId             String           @unique
+  overallRecommendation String
+  overallScore          Float
+  summary               String
+  reportJson            String
+  generatedBy           String
+  createdAt             DateTime         @default(now())
+  updatedAt             DateTime         @updatedAt
+  session               CandidateSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  dimensions            ScoreDimension[]
+}
+
+model ScoreDimension {
+  id                    String           @id @default(cuid())
+  reportId              String
+  dimension             String
+  score                 Int
+  evidenceJson          String
+  strengthsJson         String
+  concernsJson          String
+  followUpQuestionsJson String
+  report                EvaluationReport @relation(fields: [reportId], references: [id], onDelete: Cascade)
+}
+
+model InviteLink {
+  id           String             @id @default(cuid())
+  assessmentId String
+  tokenHash    String             @unique
+  publicToken  String?            @unique
+  label        String?
+  maxUses      Int?
+  useCount     Int                @default(0)
+  expiresAt    DateTime?
+  status       String             @default("active")
+  createdAt    DateTime           @default(now())
+  assessment   Assessment         @relation(fields: [assessmentId], references: [id], onDelete: Cascade)
+  sessions     CandidateSession[]
+}

@@ -1,0 +1,1255 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Hirewave Terminal And Sandbox Explainer</title>
+  <style>
+    :root {
+      --paper: #fbfaf7;
+      --ink: #161513;
+      --muted: #68625a;
+      --line: #d9d2c8;
+      --line-strong: #a99f91;
+      --panel: #ffffff;
+      --soft: #f2eee7;
+      --charcoal: #1f2428;
+      --teal: #117c7c;
+      --coral: #b94e3d;
+      --gold: #a16d16;
+      --green: #2b7a43;
+      --red: #9d2d25;
+      --blue: #305f9f;
+      --shadow: 0 18px 44px rgba(44, 35, 24, 0.10);
+      --radius: 8px;
+      font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      color: var(--ink);
+      background: var(--paper);
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    html {
+      scroll-behavior: smooth;
+    }
+
+    body {
+      margin: 0;
+      background:
+        linear-gradient(180deg, rgba(255,255,255,0.86), rgba(251,250,247,0.96)),
+        var(--paper);
+      color: var(--ink);
+    }
+
+    button,
+    input,
+    select {
+      font: inherit;
+    }
+
+    a {
+      color: inherit;
+    }
+
+    .shell {
+      min-height: 100vh;
+      display: grid;
+      grid-template-columns: 280px minmax(0, 1fr);
+    }
+
+    .sidebar {
+      position: sticky;
+      top: 0;
+      height: 100vh;
+      padding: 28px 20px;
+      border-right: 1px solid var(--line);
+      background: rgba(251, 250, 247, 0.92);
+      backdrop-filter: blur(14px);
+      overflow-y: auto;
+    }
+
+    .brand {
+      display: grid;
+      gap: 8px;
+      margin-bottom: 28px;
+    }
+
+    .brand strong {
+      font-size: 18px;
+      line-height: 1.1;
+      letter-spacing: 0;
+    }
+
+    .brand span {
+      color: var(--muted);
+      font-size: 13px;
+      line-height: 1.45;
+    }
+
+    .nav {
+      display: grid;
+      gap: 4px;
+    }
+
+    .nav a {
+      text-decoration: none;
+      color: var(--muted);
+      padding: 9px 10px;
+      border-radius: 7px;
+      font-size: 14px;
+      line-height: 1.2;
+      transition: background 160ms ease, color 160ms ease, transform 160ms ease;
+    }
+
+    .nav a:hover,
+    .nav a.active {
+      background: var(--soft);
+      color: var(--ink);
+      transform: translateX(2px);
+    }
+
+    .content {
+      min-width: 0;
+    }
+
+    .hero {
+      min-height: 86vh;
+      display: grid;
+      align-items: center;
+      padding: 56px clamp(22px, 6vw, 84px);
+      border-bottom: 1px solid var(--line);
+    }
+
+    .hero-grid {
+      display: grid;
+      grid-template-columns: minmax(0, 1.02fr) minmax(360px, 0.98fr);
+      gap: clamp(28px, 5vw, 72px);
+      align-items: center;
+    }
+
+    .eyebrow {
+      color: var(--coral);
+      font-weight: 800;
+      font-size: 12px;
+      text-transform: uppercase;
+      letter-spacing: .12em;
+      margin-bottom: 18px;
+    }
+
+    h1,
+    h2,
+    h3,
+    p {
+      margin-top: 0;
+    }
+
+    h1 {
+      font-size: clamp(42px, 7vw, 86px);
+      line-height: .95;
+      letter-spacing: 0;
+      margin-bottom: 24px;
+      max-width: 850px;
+    }
+
+    .lead {
+      font-size: clamp(18px, 2vw, 23px);
+      line-height: 1.45;
+      color: #3f3a34;
+      max-width: 760px;
+      margin-bottom: 28px;
+    }
+
+    .hero-actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      align-items: center;
+    }
+
+    .btn {
+      border: 1px solid var(--line-strong);
+      background: var(--panel);
+      color: var(--ink);
+      padding: 10px 14px;
+      border-radius: 7px;
+      min-height: 42px;
+      cursor: pointer;
+      transition: transform 160ms ease, border-color 160ms ease, background 160ms ease, color 160ms ease;
+    }
+
+    .btn:hover {
+      transform: translateY(-1px);
+      border-color: var(--ink);
+    }
+
+    .btn.primary {
+      background: var(--charcoal);
+      color: #fff;
+      border-color: var(--charcoal);
+    }
+
+    .btn.ghost {
+      background: transparent;
+    }
+
+    .terminal {
+      background: #121619;
+      color: #e9f1ed;
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      overflow: hidden;
+      border: 1px solid #30383d;
+    }
+
+    .terminal-top {
+      min-height: 38px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 14px;
+      border-bottom: 1px solid #2e353a;
+      color: #aeb7b2;
+      font-size: 12px;
+    }
+
+    .dots {
+      display: flex;
+      gap: 6px;
+    }
+
+    .dot {
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      background: #6a7379;
+    }
+
+    .dot:nth-child(1) { background: #d85a4a; }
+    .dot:nth-child(2) { background: #d69b32; }
+    .dot:nth-child(3) { background: #4baf73; }
+
+    .terminal-body {
+      padding: 18px;
+      font: 13px/1.55 "SFMono-Regular", Consolas, "Liberation Mono", monospace;
+      min-height: 300px;
+      white-space: pre-wrap;
+    }
+
+    .prompt {
+      color: #7dd3c7;
+    }
+
+    .ok { color: #86df9f; }
+    .warn { color: #f5cf7a; }
+    .bad { color: #ff8d83; }
+    .dim { color: #9aa5a0; }
+
+    section {
+      padding: 64px clamp(22px, 6vw, 84px);
+      border-bottom: 1px solid var(--line);
+    }
+
+    .section-head {
+      display: grid;
+      grid-template-columns: minmax(0, 0.8fr) minmax(260px, 0.55fr);
+      gap: clamp(20px, 4vw, 56px);
+      align-items: end;
+      margin-bottom: 30px;
+    }
+
+    h2 {
+      font-size: clamp(30px, 4.5vw, 56px);
+      line-height: 1.02;
+      letter-spacing: 0;
+      margin-bottom: 0;
+      max-width: 820px;
+    }
+
+    .section-head p,
+    .section-copy {
+      color: var(--muted);
+      line-height: 1.6;
+      font-size: 16px;
+    }
+
+    .band {
+      background: #f4f0e8;
+    }
+
+    .plain-grid {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 18px;
+    }
+
+    .info-panel {
+      background: var(--panel);
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      padding: 18px;
+      box-shadow: 0 8px 26px rgba(34, 30, 24, .05);
+    }
+
+    .info-panel h3 {
+      font-size: 18px;
+      margin-bottom: 8px;
+    }
+
+    .info-panel p,
+    .info-panel li {
+      color: var(--muted);
+      line-height: 1.55;
+      font-size: 14px;
+    }
+
+    .info-panel ul {
+      padding-left: 18px;
+      margin-bottom: 0;
+    }
+
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      min-height: 24px;
+      padding: 3px 8px;
+      border-radius: 999px;
+      font-size: 12px;
+      font-weight: 800;
+      margin-bottom: 12px;
+      color: #fff;
+      background: var(--teal);
+    }
+
+    .badge.warn { background: var(--gold); color: #fff; }
+    .badge.bad { background: var(--red); color: #fff; }
+    .badge.blue { background: var(--blue); color: #fff; }
+
+    .flow {
+      display: grid;
+      gap: 12px;
+    }
+
+    .flow-row {
+      display: grid;
+      grid-template-columns: 1fr 44px 1fr 44px 1fr;
+      align-items: stretch;
+      gap: 10px;
+    }
+
+    .flow-node {
+      background: var(--panel);
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      padding: 16px;
+      min-height: 116px;
+      cursor: pointer;
+      transition: border-color 160ms ease, transform 160ms ease, box-shadow 160ms ease;
+    }
+
+    .flow-node:hover,
+    .flow-node.selected {
+      border-color: var(--teal);
+      transform: translateY(-2px);
+      box-shadow: var(--shadow);
+    }
+
+    .flow-node small {
+      display: block;
+      color: var(--teal);
+      font-weight: 800;
+      margin-bottom: 7px;
+      text-transform: uppercase;
+      letter-spacing: .08em;
+    }
+
+    .flow-node strong {
+      display: block;
+      font-size: 17px;
+      margin-bottom: 8px;
+    }
+
+    .flow-node span {
+      display: block;
+      color: var(--muted);
+      line-height: 1.45;
+      font-size: 14px;
+    }
+
+    .connector {
+      display: grid;
+      place-items: center;
+      color: var(--line-strong);
+      font-weight: 900;
+    }
+
+    .detail-drawer {
+      margin-top: 18px;
+      background: #111619;
+      color: #e7eee9;
+      border-radius: var(--radius);
+      padding: 18px;
+      min-height: 130px;
+      border: 1px solid #30383d;
+    }
+
+    .detail-drawer h3 {
+      margin-bottom: 8px;
+    }
+
+    .detail-drawer p {
+      margin-bottom: 12px;
+      color: #c5cec8;
+      line-height: 1.55;
+    }
+
+    .detail-drawer code,
+    code {
+      font-family: "SFMono-Regular", Consolas, "Liberation Mono", monospace;
+      background: rgba(17, 124, 124, .10);
+      color: #0f6665;
+      padding: 2px 5px;
+      border-radius: 5px;
+      font-size: .93em;
+    }
+
+    .detail-drawer code {
+      background: rgba(125, 211, 199, .12);
+      color: #8ce4d7;
+    }
+
+    .mode-layout {
+      display: grid;
+      grid-template-columns: 280px minmax(0, 1fr);
+      gap: 22px;
+      align-items: start;
+    }
+
+    .mode-buttons {
+      display: grid;
+      gap: 10px;
+    }
+
+    .mode-button {
+      text-align: left;
+      background: transparent;
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      padding: 14px;
+      cursor: pointer;
+      transition: background 160ms ease, border-color 160ms ease;
+    }
+
+    .mode-button:hover,
+    .mode-button.active {
+      background: var(--panel);
+      border-color: var(--teal);
+    }
+
+    .mode-button strong {
+      display: block;
+      margin-bottom: 5px;
+    }
+
+    .mode-button span {
+      color: var(--muted);
+      font-size: 13px;
+      line-height: 1.35;
+    }
+
+    .mode-detail {
+      background: var(--panel);
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      padding: 24px;
+      min-height: 320px;
+      box-shadow: var(--shadow);
+    }
+
+    .kv-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 12px;
+      margin-top: 18px;
+    }
+
+    .kv {
+      border-top: 1px solid var(--line);
+      padding-top: 10px;
+    }
+
+    .kv span {
+      display: block;
+      color: var(--muted);
+      font-size: 12px;
+      text-transform: uppercase;
+      letter-spacing: .08em;
+      font-weight: 800;
+      margin-bottom: 5px;
+    }
+
+    .kv strong {
+      font-size: 15px;
+      line-height: 1.35;
+    }
+
+    .demo-layout {
+      display: grid;
+      grid-template-columns: 270px minmax(0, 1fr);
+      gap: 22px;
+    }
+
+    .command-list {
+      display: grid;
+      gap: 8px;
+    }
+
+    .command-list button {
+      text-align: left;
+      border: 1px solid var(--line);
+      background: var(--panel);
+      border-radius: 7px;
+      padding: 12px;
+      cursor: pointer;
+      transition: border-color 160ms ease, transform 160ms ease;
+    }
+
+    .command-list button:hover,
+    .command-list button.active {
+      border-color: var(--teal);
+      transform: translateX(2px);
+    }
+
+    .demo-terminal {
+      min-height: 440px;
+    }
+
+    .split {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+      gap: 22px;
+    }
+
+    .evidence-list {
+      display: grid;
+      gap: 12px;
+    }
+
+    .evidence-row {
+      display: grid;
+      grid-template-columns: 150px minmax(0, 1fr);
+      gap: 16px;
+      padding: 14px 0;
+      border-bottom: 1px solid var(--line);
+    }
+
+    .evidence-row strong {
+      color: var(--ink);
+    }
+
+    .evidence-row span {
+      color: var(--muted);
+      line-height: 1.55;
+    }
+
+    .code-block {
+      background: #111619;
+      color: #e7eee9;
+      border-radius: var(--radius);
+      padding: 16px;
+      font: 13px/1.55 "SFMono-Regular", Consolas, "Liberation Mono", monospace;
+      overflow: auto;
+      border: 1px solid #30383d;
+    }
+
+    .switch-row {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+      margin-bottom: 16px;
+    }
+
+    .pill {
+      border: 1px solid var(--line);
+      background: var(--panel);
+      border-radius: 999px;
+      padding: 8px 12px;
+      cursor: pointer;
+      font-size: 13px;
+      font-weight: 700;
+    }
+
+    .pill.active {
+      color: #fff;
+      background: var(--teal);
+      border-color: var(--teal);
+    }
+
+    .footer {
+      padding: 36px clamp(22px, 6vw, 84px);
+      color: var(--muted);
+      font-size: 13px;
+    }
+
+    .reveal {
+      opacity: 0;
+      transform: translateY(18px);
+      transition: opacity 520ms ease, transform 520ms ease;
+    }
+
+    .reveal.visible {
+      opacity: 1;
+      transform: translateY(0);
+    }
+
+    @media (max-width: 980px) {
+      .shell {
+        grid-template-columns: 1fr;
+      }
+
+      .sidebar {
+        position: relative;
+        height: auto;
+        border-right: 0;
+        border-bottom: 1px solid var(--line);
+      }
+
+      .nav {
+        display: flex;
+        overflow-x: auto;
+        padding-bottom: 6px;
+      }
+
+      .nav a {
+        white-space: nowrap;
+      }
+
+      .hero-grid,
+      .section-head,
+      .mode-layout,
+      .demo-layout,
+      .split {
+        grid-template-columns: 1fr;
+      }
+
+      .hero {
+        min-height: auto;
+      }
+
+      .plain-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .flow-row {
+        grid-template-columns: 1fr;
+      }
+
+      .connector {
+        min-height: 22px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="shell">
+    <aside class="sidebar">
+      <div class="brand">
+        <strong>Hirewave Terminal And Sandbox</strong>
+        <span>Interactive explanation of what happens when a candidate runs commands inside the assessment room.</span>
+      </div>
+      <nav class="nav" aria-label="Document sections">
+        <a href="#plain">Plain meaning</a>
+        <a href="#flow">Command flow</a>
+        <a href="#modes">Provider modes</a>
+        <a href="#demo">Demo terminal</a>
+        <a href="#evidence">Evidence stored</a>
+        <a href="#dev">Developer map</a>
+        <a href="#left">What is left</a>
+      </nav>
+    </aside>
+
+    <main class="content">
+      <header class="hero" id="top">
+        <div class="hero-grid">
+          <div>
+            <div class="eyebrow">Terminal layer explainer</div>
+            <h1>What we built around the candidate terminal</h1>
+            <p class="lead">
+              The candidate terminal is not your Mac terminal. It is a controlled command runner that decides what can run,
+              what files it runs against, what evidence gets saved, and how honestly the report labels the result.
+            </p>
+            <div class="hero-actions">
+              <a class="btn primary" href="#flow">See the flow</a>
+              <a class="btn ghost" href="#demo">Try examples</a>
+            </div>
+          </div>
+
+          <div class="terminal" aria-label="Terminal preview">
+            <div class="terminal-top">
+              <div class="dots" aria-hidden="true">
+                <span class="dot"></span>
+                <span class="dot"></span>
+                <span class="dot"></span>
+              </div>
+              <span>Candidate terminal</span>
+            </div>
+            <div class="terminal-body"><span class="prompt">$ npm test</span>
+Preparing workspace manifest...
+Provider: simulated
+Allowed command: yes
+Running deterministic checkout tests...
+
+<span class="ok">Result: 4/4 passed</span>
+Evidence saved:
+- command run
+- test results
+- workspace digest
+- sandbox readiness: demo_only
+- risk flag: not production isolated</div>
+          </div>
+        </div>
+      </header>
+
+      <section id="plain" class="reveal">
+        <div class="section-head">
+          <h2>In plain language</h2>
+          <p>This is the mental model to keep in mind before reading code.</p>
+        </div>
+        <div class="plain-grid">
+          <article class="info-panel">
+            <span class="badge">1</span>
+            <h3>The terminal is a gate</h3>
+            <p>When a candidate types <code>npm test</code>, the app does not blindly run any shell command. It sends the request through a controlled server route and a provider.</p>
+          </article>
+          <article class="info-panel">
+            <span class="badge warn">2</span>
+            <h3>The files are fingerprinted</h3>
+            <p>Before running the command, the app creates a workspace manifest: file paths, sizes, hashes, and one digest for the whole mounted workspace.</p>
+          </article>
+          <article class="info-panel">
+            <span class="badge blue">3</span>
+            <h3>The report stays honest</h3>
+            <p>The report says whether the command came from a demo provider, local-dev runner, or future production provider. It should not pretend demo evidence is production isolation.</p>
+          </article>
+        </div>
+      </section>
+
+      <section id="flow" class="band reveal">
+        <div class="section-head">
+          <h2>What happens when the candidate runs a command</h2>
+          <p>Click any step to see what the app records and why it exists.</p>
+        </div>
+
+        <div class="flow">
+          <div class="flow-row">
+            <button class="flow-node selected" data-step="candidate">
+              <small>Step 1</small>
+              <strong>Candidate clicks Run</strong>
+              <span>The browser sends the typed command to the session command API.</span>
+            </button>
+            <div class="connector">to</div>
+            <button class="flow-node" data-step="route">
+              <small>Step 2</small>
+              <strong>Command route checks session</strong>
+              <span>The API confirms the token exists and the session is not closed.</span>
+            </button>
+            <div class="connector">to</div>
+            <button class="flow-node" data-step="manifest">
+              <small>Step 3</small>
+              <strong>Workspace manifest is built</strong>
+              <span>The latest candidate files get hashed and summarized.</span>
+            </button>
+          </div>
+          <div class="flow-row">
+            <button class="flow-node" data-step="provider">
+              <small>Step 4</small>
+              <strong>Provider decides execution</strong>
+              <span>Simulated, local-dev, or external placeholder handles the run.</span>
+            </button>
+            <div class="connector">to</div>
+            <button class="flow-node" data-step="output">
+              <small>Step 5</small>
+              <strong>Output is capped and labeled</strong>
+              <span>Logs are split into system, stdout, and stderr chunks.</span>
+            </button>
+            <div class="connector">to</div>
+            <button class="flow-node" data-step="report">
+              <small>Step 6</small>
+              <strong>Evidence enters report</strong>
+              <span>Tests, metadata, risks, and file snapshots become review evidence.</span>
+            </button>
+          </div>
+        </div>
+
+        <div class="detail-drawer" id="flowDetail">
+          <h3>Candidate clicks Run</h3>
+          <p>The browser calls <code>POST /api/session/[sessionToken]/commands</code> with a body like <code>{"command":"npm test"}</code>.</p>
+          <p>The candidate sees a terminal, but the server still controls what happens next.</p>
+        </div>
+      </section>
+
+      <section id="modes" class="reveal">
+        <div class="section-head">
+          <h2>Three provider modes</h2>
+          <p>Provider means "who actually handles this command". Today only the simulated path is default for demos.</p>
+        </div>
+
+        <div class="mode-layout">
+          <div class="mode-buttons" role="tablist" aria-label="Provider modes">
+            <button class="mode-button active" data-mode="simulated" role="tab">
+              <strong>Simulated</strong>
+              <span>Default deterministic MVP runner.</span>
+            </button>
+            <button class="mode-button" data-mode="local" role="tab">
+              <strong>Local-dev</strong>
+              <span>Real local process, development only.</span>
+            </button>
+            <button class="mode-button" data-mode="external" role="tab">
+              <strong>External placeholder</strong>
+              <span>Future E2B, Daytona, CodeSandbox path.</span>
+            </button>
+          </div>
+
+          <div class="mode-detail" id="modeDetail" role="tabpanel">
+            <span class="badge">Default</span>
+            <h3>Simulated provider</h3>
+            <p class="section-copy">This is the safe MVP demo path. It does not run arbitrary host shell commands. It supports only the controlled commands used by the assessment room.</p>
+            <div class="kv-grid">
+              <div class="kv"><span>Readiness</span><strong>demo_only</strong></div>
+              <div class="kv"><span>Isolation</span><strong>none</strong></div>
+              <div class="kv"><span>Real code execution</span><strong>not_supported</strong></div>
+              <div class="kv"><span>Use case</span><strong>Deterministic product demos and tests</strong></div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section id="demo" class="band reveal">
+        <div class="section-head">
+          <h2>Demo examples</h2>
+          <p>These examples show how the same terminal command becomes structured evidence instead of just a plain log.</p>
+        </div>
+
+        <div class="demo-layout">
+          <div class="command-list" aria-label="Demo commands">
+            <button class="active" data-command="pass"><code>npm test</code> after fixes</button>
+            <button data-command="fail"><code>npm test</code> before fixes</button>
+            <button data-command="cat"><code>cat src/cart.ts</code></button>
+            <button data-command="blocked"><code>rm -rf .</code></button>
+            <button data-command="external"><code>SANDBOX_PROVIDER=e2b</code></button>
+          </div>
+
+          <div class="terminal demo-terminal">
+            <div class="terminal-top">
+              <div class="dots" aria-hidden="true">
+                <span class="dot"></span>
+                <span class="dot"></span>
+                <span class="dot"></span>
+              </div>
+              <span id="demoTitle">npm test after fixes</span>
+            </div>
+            <div class="terminal-body" id="demoOutput"></div>
+          </div>
+        </div>
+      </section>
+
+      <section id="evidence" class="reveal">
+        <div class="section-head">
+          <h2>What gets stored for reviewers</h2>
+          <p>The important change is not only "tests can run". The important change is "we can prove what kind of execution produced the result".</p>
+        </div>
+
+        <div class="split">
+          <div class="evidence-list">
+            <div class="evidence-row">
+              <strong>CommandRun</strong>
+              <span>The compact DB row: command, status, output, exit code, start time, finish time.</span>
+            </div>
+            <div class="evidence-row">
+              <strong>TestResult</strong>
+              <span>Parsed test names and pass/fail status, especially for <code>npm test</code>.</span>
+            </div>
+            <div class="evidence-row">
+              <strong>SessionEvent</strong>
+              <span>Append-only telemetry for command started, output, finished, test finished, and sandbox snapshots.</span>
+            </div>
+            <div class="evidence-row">
+              <strong>FileSnapshot</strong>
+              <span>Candidate edits and safe runner-owned snapshots that should appear in final diffs.</span>
+            </div>
+            <div class="evidence-row">
+              <strong>Report metadata</strong>
+              <span>Provider kind, readiness, capability gaps, workspace digest, output truncation, cleanup, and risk flags.</span>
+            </div>
+          </div>
+
+          <div>
+            <div class="switch-row">
+              <button class="pill active" data-json="summary">Report summary</button>
+              <button class="pill" data-json="manifest">Workspace manifest</button>
+              <button class="pill" data-json="risk">Risk flags</button>
+            </div>
+            <pre class="code-block" id="jsonBlock"></pre>
+          </div>
+        </div>
+      </section>
+
+      <section id="dev" class="band reveal">
+        <div class="section-head">
+          <h2>Developer map</h2>
+          <p>This is where to look in code when you want to understand or change the terminal layer.</p>
+        </div>
+
+        <div class="plain-grid">
+          <article class="info-panel">
+            <span class="badge">API</span>
+            <h3>Command route</h3>
+            <p><code>app/api/session/[sessionToken]/commands/route.ts</code></p>
+            <ul>
+              <li>Checks session state.</li>
+              <li>Builds workspace manifest.</li>
+              <li>Calls the selected provider.</li>
+              <li>Stores command, test, and telemetry rows.</li>
+            </ul>
+          </article>
+          <article class="info-panel">
+            <span class="badge blue">Provider</span>
+            <h3>Sandbox implementations</h3>
+            <p><code>lib/sandbox/*</code></p>
+            <ul>
+              <li><code>simulated-provider.ts</code> for MVP demo commands.</li>
+              <li><code>local-dev-provider.ts</code> for opt-in local commands.</li>
+              <li><code>external-provider.ts</code> for future adapters.</li>
+            </ul>
+          </article>
+          <article class="info-panel">
+            <span class="badge warn">Report</span>
+            <h3>Evidence aggregation</h3>
+            <p><code>lib/evaluation/generate-report.ts</code></p>
+            <ul>
+              <li>Aggregates sandbox metadata.</li>
+              <li>Builds risk flags.</li>
+              <li>Keeps demo/local evidence labeled honestly.</li>
+            </ul>
+          </article>
+        </div>
+      </section>
+
+      <section id="left" class="reveal">
+        <div class="section-head">
+          <h2>What is still left</h2>
+          <p>This is the line between what we built and what still needs to be built before claiming production sandboxing.</p>
+        </div>
+
+        <div class="split">
+          <div class="info-panel">
+            <span class="badge">Done now</span>
+            <h3>Foundation and evidence layer</h3>
+            <ul>
+              <li>Provider interface exists.</li>
+              <li>Simulated provider is deterministic.</li>
+              <li>Local-dev provider is opt-in and labeled local-only.</li>
+              <li>External provider path fails closed.</li>
+              <li>Workspace manifest proves what files were mounted.</li>
+              <li>Reports capture readiness, capability gaps, and risk flags.</li>
+            </ul>
+          </div>
+
+          <div class="info-panel">
+            <span class="badge bad">Not done yet</span>
+            <h3>Real production sandbox</h3>
+            <ul>
+              <li>No real E2B, Daytona, CodeSandbox, Docker, or microVM adapter yet.</li>
+              <li>No production per-session credential boundary yet.</li>
+              <li>No enforced production network policy yet.</li>
+              <li>No background lifecycle cleanup/reaper yet.</li>
+              <li>No enterprise audit UI for raw sandbox runs yet.</li>
+            </ul>
+          </div>
+        </div>
+      </section>
+
+      <footer class="footer">
+        Source date: 2026-05-19. This document explains the current Hirewave MVP terminal/sandbox foundation. It should not be used to claim production sandbox isolation.
+      </footer>
+    </main>
+  </div>
+
+  <script>
+    const flowDetails = {
+      candidate: {
+        title: 'Candidate clicks Run',
+        body: [
+          'The browser calls POST /api/session/[sessionToken]/commands with a body like {"command":"npm test"}.',
+          'The candidate sees a terminal UI, but the server controls what command handling actually means.'
+        ]
+      },
+      route: {
+        title: 'Command route checks session',
+        body: [
+          'The route loads the session by token. If the token is unknown, it returns 404.',
+          'If the session is submitted, expired, or report_ready, the route returns 409 and does not run the command.'
+        ]
+      },
+      manifest: {
+        title: 'Workspace manifest is built',
+        body: [
+          'The app reads latest FileSnapshot rows and builds a manifest with file count, total bytes, per-file content hashes, and one workspace digest.',
+          'This is the proof that command evidence came from a specific file set.'
+        ]
+      },
+      provider: {
+        title: 'Provider decides execution',
+        body: [
+          'The selected provider can be simulated, local-dev, or external placeholder.',
+          'Each provider reports readiness and capabilities, so the report can say demo_only, local_dev_only, adapter_unconfigured, or production_ready.'
+        ]
+      },
+      output: {
+        title: 'Output is capped and labeled',
+        body: [
+          'The route caps large output before writing the DB row, telemetry event, or API response.',
+          'Output chunks keep stream labels: system, stdout, and stderr. That makes future real sandbox logs easier to audit.'
+        ]
+      },
+      report: {
+        title: 'Evidence enters report',
+        body: [
+          'The report aggregates command runs, test results, workspace digests, provider run IDs, cleanup status, risk flags, and skipped reasons.',
+          'This lets reviewers see whether evidence came from a demo runner, local-dev runner, or future production provider.'
+        ]
+      }
+    };
+
+    const modeDetails = {
+      simulated: {
+        badge: 'Default',
+        badgeClass: '',
+        title: 'Simulated provider',
+        copy: 'This is the safe MVP demo path. It does not run arbitrary host shell commands. It supports only the controlled commands used by the assessment room.',
+        kv: [
+          ['Readiness', 'demo_only'],
+          ['Isolation', 'none'],
+          ['Real code execution', 'not_supported'],
+          ['Use case', 'Deterministic product demos and tests']
+        ]
+      },
+      local: {
+        badge: 'Dev only',
+        badgeClass: 'warn',
+        title: 'Local-dev provider',
+        copy: 'This can run a local process in a temporary workspace, but only when explicitly enabled. It is for developer experiments, not candidate-facing production use.',
+        kv: [
+          ['Readiness', 'local_dev_only'],
+          ['Isolation', 'host_temp_directory'],
+          ['Environment', 'NODE_ENV and PATH only'],
+          ['Use case', 'Testing provider shape before real sandbox integration']
+        ]
+      },
+      external: {
+        badge: 'Future path',
+        badgeClass: 'bad',
+        title: 'External placeholder',
+        copy: 'This reserves the integration path for E2B, Daytona, or CodeSandbox. Today it fails closed so Hirewave does not claim production isolation before an adapter exists.',
+        kv: [
+          ['Readiness', 'adapter_unconfigured'],
+          ['Execution mode', 'not_executed'],
+          ['Skipped reason', 'external_provider_unconfigured'],
+          ['Use case', 'Safe placeholder for real provider work']
+        ]
+      }
+    };
+
+    const demos = {
+      pass: {
+        title: 'npm test after fixes',
+        output: `<span class="prompt">$ npm test</span>
+Preparing workspace manifest...
+workspaceFileCount: 5
+workspaceDigest: sha256:3f2c...
+provider: simulated
+readiness: demo_only
+
+Running checkout tests...
+<span class="ok">PASS</span> rejects missing quantities
+<span class="ok">PASS</span> rejects non-positive quantities
+<span class="ok">PASS</span> charges with idempotency key
+<span class="ok">PASS</span> rolls back inventory on payment failure
+
+<span class="ok">Result: 4/4 passed</span>
+Report note: evidence is demo-only, not production isolated.`
+      },
+      fail: {
+        title: 'npm test before fixes',
+        output: `<span class="prompt">$ npm test</span>
+Preparing workspace manifest...
+provider: simulated
+
+Running checkout tests...
+<span class="bad">FAIL</span> rejects missing quantities
+<span class="bad">FAIL</span> rejects non-positive quantities
+<span class="ok">PASS</span> charges with idempotency key
+<span class="bad">FAIL</span> rolls back inventory on payment failure
+
+<span class="bad">Result: 1/4 passed</span>
+Stored as CommandRun + TestResult evidence.`
+      },
+      cat: {
+        title: 'cat src/cart.ts',
+        output: `<span class="prompt">$ cat src/cart.ts</span>
+Path validation: ok
+Provider: simulated
+
+export type CartItem = {
+  sku: string;
+  quantity: number;
+  priceCents: number;
+};
+
+Output chunk:
+stream: stdout`
+      },
+      blocked: {
+        title: 'blocked command',
+        output: `<span class="prompt">$ rm -rf .</span>
+Provider policy check...
+Allowed command: no
+
+<span class="bad">Command is not allowed.</span>
+skippedReason: command_not_allowed
+exitCode: 1
+
+Report can show this as a policy block, not as a candidate test result.`
+      },
+      external: {
+        title: 'external provider placeholder',
+        output: `<span class="prompt">$ SANDBOX_PROVIDER=e2b npm test</span>
+Selected provider: e2b
+Adapter status: unconfigured
+
+<span class="warn">No external sandbox adapter is configured yet.</span>
+skippedReason: external_provider_unconfigured
+readiness: adapter_unconfigured
+executionMode: not_executed
+
+This protects the product from pretending E2B is already integrated.`
+      }
+    };
+
+    const jsonExamples = {
+      summary: `{
+  "sandboxSummary": "1 command run captured through simulated provider",
+  "readinessStatuses": ["demo_only"],
+  "capabilityGaps": ["productionIsolation", "realCodeExecution"],
+  "productionReadyCommandCount": 0,
+  "nonProductionReadyCommandCount": 1
+}`,
+      manifest: `{
+  "workspaceFileCount": 5,
+  "workspaceTotalBytes": 8421,
+  "workspaceFiles": [
+    {
+      "path": "src/cart.ts",
+      "language": "typescript",
+      "contentLength": 522,
+      "contentSha256": "..."
+    }
+  ],
+  "workspaceDigest": "sha256:..."
+}`,
+      risk: `[
+  "sandbox_not_production_ready",
+  "sandbox_not_production_isolated"
+]
+
+Meaning:
+- command evidence is useful for MVP review
+- it is not proof of secure production isolation`
+    };
+
+    function renderFlow(step) {
+      const detail = flowDetails[step];
+      document.querySelectorAll('.flow-node').forEach((node) => {
+        node.classList.toggle('selected', node.dataset.step === step);
+      });
+      document.getElementById('flowDetail').innerHTML = `
+        <h3>${detail.title}</h3>
+        ${detail.body.map((line) => `<p>${line}</p>`).join('')}
+      `;
+    }
+
+    function renderMode(mode) {
+      const detail = modeDetails[mode];
+      document.querySelectorAll('.mode-button').forEach((button) => {
+        button.classList.toggle('active', button.dataset.mode === mode);
+      });
+      document.getElementById('modeDetail').innerHTML = `
+        <span class="badge ${detail.badgeClass}">${detail.badge}</span>
+        <h3>${detail.title}</h3>
+        <p class="section-copy">${detail.copy}</p>
+        <div class="kv-grid">
+          ${detail.kv.map(([label, value]) => `
+            <div class="kv"><span>${label}</span><strong>${value}</strong></div>
+          `).join('')}
+        </div>
+      `;
+    }
+
+    function renderDemo(command) {
+      const demo = demos[command];
+      document.querySelectorAll('.command-list button').forEach((button) => {
+        button.classList.toggle('active', button.dataset.command === command);
+      });
+      document.getElementById('demoTitle').textContent = demo.title;
+      document.getElementById('demoOutput').innerHTML = demo.output;
+    }
+
+    function renderJson(kind) {
+      document.querySelectorAll('.pill').forEach((pill) => {
+        pill.classList.toggle('active', pill.dataset.json === kind);
+      });
+      document.getElementById('jsonBlock').textContent = jsonExamples[kind];
+    }
+
+    document.querySelectorAll('.flow-node').forEach((node) => {
+      node.addEventListener('click', () => renderFlow(node.dataset.step));
+    });
+
+    document.querySelectorAll('.mode-button').forEach((button) => {
+      button.addEventListener('click', () => renderMode(button.dataset.mode));
+    });
+
+    document.querySelectorAll('.command-list button').forEach((button) => {
+      button.addEventListener('click', () => renderDemo(button.dataset.command));
+    });
+
+    document.querySelectorAll('.pill').forEach((pill) => {
+      pill.addEventListener('click', () => renderJson(pill.dataset.json));
+    });
+
+    const observer = new IntersectionObserver((entries) => {
+      entries.forEach((entry) => {
+        if (entry.isIntersecting) entry.target.classList.add('visible');
+      });
+    }, { threshold: 0.12 });
+
+    document.querySelectorAll('.reveal').forEach((section) => observer.observe(section));
+
+    const sections = Array.from(document.querySelectorAll('section[id]'));
+    const navLinks = Array.from(document.querySelectorAll('.nav a'));
+    window.addEventListener('scroll', () => {
+      const active = sections
+        .map((section) => ({ id: section.id, top: Math.abs(section.getBoundingClientRect().top - 120) }))
+        .sort((a, b) => a.top - b.top)[0];
+      if (!active) return;
+      navLinks.forEach((link) => {
+        link.classList.toggle('active', link.getAttribute('href') === `#${active.id}`);
+      });
+    }, { passive: true });
+
+    renderDemo('pass');
+    renderJson('summary');
+  </script>
+</body>
+</html>
