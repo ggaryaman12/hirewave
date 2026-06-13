@@ -136,8 +136,10 @@ function outputChunksFromPayload(payload: Record<string, unknown> | undefined) {
     if (candidate.stream !== 'system' && candidate.stream !== 'stdout' && candidate.stream !== 'stderr') return [];
     if (typeof candidate.content !== 'string') return [];
 
+    const stream: 'system' | 'stdout' | 'stderr' = candidate.stream;
+
     return [{
-      stream: candidate.stream,
+      stream,
       content: candidate.content,
       truncated: candidate.truncated === true,
     }];

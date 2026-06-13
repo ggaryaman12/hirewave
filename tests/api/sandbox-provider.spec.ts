@@ -320,9 +320,10 @@ test.describe('sandbox provider adapter', () => {
   });
 
   test('local-dev fails closed in production even when explicitly enabled', async () => {
+    const mutableEnv = process.env as Record<string, string | undefined>;
     const originalNodeEnv = process.env.NODE_ENV;
     const originalEnabled = process.env.SANDBOX_LOCAL_DEV_ENABLED;
-    process.env.NODE_ENV = 'production';
+    mutableEnv.NODE_ENV = 'production';
     process.env.SANDBOX_LOCAL_DEV_ENABLED = 'true';
 
     try {
@@ -348,8 +349,8 @@ test.describe('sandbox provider adapter', () => {
       expect(result.provider.capabilities).toEqual(LOCAL_DEV_CAPABILITIES);
       expect(result.snapshots).toHaveLength(0);
     } finally {
-      if (originalNodeEnv === undefined) delete process.env.NODE_ENV;
-      else process.env.NODE_ENV = originalNodeEnv;
+      if (originalNodeEnv === undefined) delete mutableEnv.NODE_ENV;
+      else mutableEnv.NODE_ENV = originalNodeEnv;
       if (originalEnabled === undefined) delete process.env.SANDBOX_LOCAL_DEV_ENABLED;
       else process.env.SANDBOX_LOCAL_DEV_ENABLED = originalEnabled;
     }
