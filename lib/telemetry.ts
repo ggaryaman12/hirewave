@@ -17,7 +17,14 @@ export type SessionEventType =
   | 'test_run_finished'
   | 'candidate_note_added'
   | 'focus_changed'
-  | 'error_occurred';
+  | 'error_occurred'
+  | 'ai_agent_message'
+  | 'ai_agent_command_run'
+  | 'ai_agent_file_read'
+  | 'ai_agent_edit_proposed'
+  | 'ai_agent_step_limit_reached'
+  | 'candidate_edit_approved'
+  | 'candidate_edit_rejected';
 
 export async function logSessionEvent(input: {
   sessionId: string;

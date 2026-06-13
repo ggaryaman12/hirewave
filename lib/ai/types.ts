@@ -74,3 +74,34 @@ export type AiProviderResult = {
   safetyFlags: string[];
   metadata: Record<string, unknown>;
 };
+
+// ---- Tool-calling (agent mode) ----
+
+export type AiToolDefinition = {
+  type: 'function';
+  function: {
+    name: string;
+    description: string;
+    parameters: Record<string, unknown>;
+  };
+};
+
+export type AiToolCall = {
+  id: string;
+  name: string;
+  args: Record<string, unknown>;
+};
+
+export type AiChatMessage =
+  | { role: 'system' | 'user'; content: string }
+  | { role: 'assistant'; content: string; toolCalls?: AiToolCall[] }
+  | { role: 'tool'; toolCallId: string; name: string; content: string };
+
+export type AiToolChatResult = {
+  content: string;
+  toolCalls: AiToolCall[];
+  finishReason?: string;
+  reasoning?: string;
+  model: string;
+  usage: AiProviderUsage;
+};

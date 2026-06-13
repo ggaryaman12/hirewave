@@ -125,7 +125,26 @@ model CandidateSession {
   commandRuns      CommandRun[]
   aiMessages       AiMessage[]
   testResults      TestResult[]
+  agentProposals   AgentProposal[]
   evaluationReport EvaluationReport?
+}
+
+model AgentProposal {
+  id             String           @id @default(cuid())
+  sessionId      String
+  aiMessageId    String?
+  toolCallId     String
+  path           String
+  newContent     String
+  diffJson       String
+  rationale      String?
+  status         String           @default("pending")
+  decisionReason String?
+  decidedAt      DateTime?
+  createdAt      DateTime         @default(now())
+  session        CandidateSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+
+  @@index([sessionId, status])
 }
 
 model SessionEvent {

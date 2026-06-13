@@ -1,4 +1,11 @@
-import type { AiAssistantRequest, AiProviderResult } from '@/lib/ai/types';
+import type {
+  AiAssistantRequest,
+  AiChatMessage,
+  AiProviderResult,
+  AiToolCall,
+  AiToolChatResult,
+  AiToolDefinition,
+} from '@/lib/ai/types';
 import { buildTokenUsage } from '@/lib/ai/token-usage';
 import {
   HIREWAVE_ASSISTANT_SYSTEM_PROMPT,
@@ -248,6 +255,151 @@ export async function generateOpenAiCompatibleAiResponse(input: {
       reasoningEffort: config.reasoningEffort,
       finishReason: typeof firstChoice.finish_reason === 'string' ? firstChoice.finish_reason : undefined,
       reasoning: reasoning ? truncate(reasoning, MAX_REASONING_METADATA_CHARS) : undefined,
+    },
+  };
+}
+
+// ---------------------------------------------------------------------------
+// Tool-calling (agent mode)
+// ---------------------------------------------------------------------------
+
+type WireMessage =
+  | { role: 'system' | 'user'; content: string }
+  | {
+      role: 'assistant';
+      content: string;
+      tool_calls?: Array<{ id: string; type: 'function'; function: { name: string; arguments: string } }>;
+    }
+  | { role: 'tool'; tool_call_id: string; content: string };
+
+function toWireMessage(message: AiChatMessage): WireMessage {
+  if (message.role === 'assistant') {
+    return {
+      role: 'assistant',
+      content: message.content,
+      ...(message.toolCalls && message.toolCalls.length
+        ? {
+            tool_calls: message.toolCalls.map((call) => ({
+              id: call.id,
+              type: 'function' as const,
+              function: { name: call.name, arguments: JSON.stringify(call.args ?? {}) },
+            })),
+          }
+        : {}),
+    };
+  }
+
+  if (message.role === 'tool') {
+    return { role: 'tool', tool_call_id: message.toolCallId, content: message.content };
+  }
+
+  return { role: message.role, content: message.content };
+}
+
+function parseToolCalls(message: Record<string, unknown>): AiToolCall[] {
+  const rawCalls = Array.isArray(message.tool_calls) ? message.tool_calls : [];
+
+  return rawCalls.flatMap((raw) => {
+    const call = raw as Record<string, unknown>;
+    const fn = (call.function || {}) as Record<string, unknown>;
+    const name = typeof fn.name === 'string' ? fn.name : '';
+    if (!name) return [];
+
+    let args: Record<string, unknown> = {};
+    if (typeof fn.arguments === 'string' && fn.arguments.trim()) {
+      try {
+        args = JSON.parse(fn.arguments) as Record<string, unknown>;
+      } catch {
+        args = { _raw: fn.arguments };
+      }
+    } else if (fn.arguments && typeof fn.arguments === 'object') {
+      args = fn.arguments as Record<string, unknown>;
+    }
+
+    return [{ id: typeof call.id === 'string' ? call.id : `call_${name}`, name, args }];
+  });
+}
+
+// One tool-aware turn against an OpenAI-compatible chat endpoint. The caller
+// (agent loop) owns the multi-step loop, tool execution, and message history.
+export async function generateOpenAiCompatibleToolResponse(input: {
+  messages: AiChatMessage[];
+  tools: AiToolDefinition[];
+  config?: OpenAiCompatibleConfig;
+  fetchImpl?: FetchLike;
+}): Promise<AiToolChatResult> {
+  const config = input.config || getOpenAiCompatibleConfig();
+  if (!config.apiKey) {
+    throw new Error('OpenAI-compatible provider missing AI_API_KEY');
+  }
+
+  const fetchImpl = input.fetchImpl || fetch;
+  const requestBody = {
+    model: config.model,
+    messages: input.messages.map(toWireMessage),
+    temperature: config.temperature,
+    top_p: config.topP,
+    max_tokens: config.maxTokens,
+    tools: input.tools,
+    tool_choice: 'auto' as const,
+    ...(config.thinking
+      ? { chat_template_kwargs: { thinking: true, reasoning_effort: config.reasoningEffort } }
+      : {}),
+    stream: false as const,
+  };
+  const promptChars = input.messages.reduce((sum, message) => sum + (message.content?.length || 0), 0);
+
+  const response = await fetchWithRetry({
+    url: `${normalizeBaseUrl(config.baseUrl)}/chat/completions`,
+    body: JSON.stringify(requestBody),
+    apiKey: config.apiKey,
+    timeoutMs: config.timeoutMs,
+    maxRetries: config.maxRetries,
+    fetchImpl,
+  });
+
+  const rawBody = await response.text();
+  if (!response.ok) {
+    throw new Error(`OpenAI-compatible request failed (${response.status}): ${rawBody.slice(0, 500)}`);
+  }
+
+  let parsed: Record<string, unknown> = {};
+  try {
+    parsed = JSON.parse(rawBody) as Record<string, unknown>;
+  } catch {
+    throw new Error(`Non-JSON OpenAI-compatible response: ${rawBody.slice(0, 240)}`);
+  }
+
+  const choices = Array.isArray(parsed.choices) ? parsed.choices : [];
+  const firstChoice = (choices[0] || {}) as Record<string, unknown>;
+  const message = (firstChoice.message || {}) as Record<string, unknown>;
+  const content = readMessageString(message, 'content').trim();
+  const toolCalls = parseToolCalls(message);
+
+  if (!content && !toolCalls.length) {
+    throw new Error('OpenAI-compatible response had neither content nor tool calls.');
+  }
+
+  const usage = (parsed.usage || {}) as Record<string, unknown>;
+  const reasoning =
+    readMessageString(message, 'reasoning') || readMessageString(message, 'reasoning_content');
+
+  return {
+    content,
+    toolCalls,
+    finishReason: typeof firstChoice.finish_reason === 'string' ? firstChoice.finish_reason : undefined,
+    reasoning: reasoning ? truncate(reasoning, MAX_REASONING_METADATA_CHARS) : undefined,
+    model: typeof parsed.model === 'string' && parsed.model ? parsed.model : config.model,
+    usage: {
+      promptChars,
+      responseChars: content.length,
+      includedFiles: [],
+      ...buildTokenUsage({
+        promptChars,
+        responseChars: content.length,
+        providerPromptTokens: usage.prompt_tokens,
+        providerCompletionTokens: usage.completion_tokens,
+      }),
     },
   };
 }
