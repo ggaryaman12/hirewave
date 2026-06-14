@@ -1,5 +1,8 @@
 import { db } from '@/lib/db';
-import { generateOpenAiCompatibleToolResponse } from '@/lib/ai/openai-compatible-provider';
+import {
+  generateOpenAiCompatibleToolResponse,
+  getOpenAiCompatibleAgentConfig,
+} from '@/lib/ai/openai-compatible-provider';
 import type { OpenAiCompatibleConfig } from '@/lib/ai/openai-compatible-provider';
 import type { AiChatMessage, AiToolCall, AiToolChatResult } from '@/lib/ai/types';
 import type { WorkspaceFile } from '@/lib/sandbox/types';
@@ -112,6 +115,7 @@ export async function runAgentTurn(input: {
   maxSteps?: number;
 }): Promise<AgentTurnResult> {
   const generate = input.generateTool || generateOpenAiCompatibleToolResponse;
+  const config = input.config || getOpenAiCompatibleAgentConfig();
   const maxSteps = input.maxSteps || DEFAULT_MAX_STEPS;
 
   const messages: AiChatMessage[] = [
@@ -123,7 +127,7 @@ export async function runAgentTurn(input: {
   const proposalIds: string[] = [];
 
   for (let step = 0; step < maxSteps; step += 1) {
-    const result = await generate({ messages, tools: AGENT_TOOLS, config: input.config });
+    const result = await generate({ messages, tools: AGENT_TOOLS, config });
 
     const assistantRecord = await db.aiMessage.create({
       data: {

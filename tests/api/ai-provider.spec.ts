@@ -115,6 +115,14 @@ test.describe('AI provider selection', () => {
 
     const result = await generateAiAssistantResponse(createAiRequest({
       candidateMessage: 'How should I debug test failures?',
+      workspace: {
+        selectedFilePath: 'src/cart.ts',
+        files: [
+          { path: 'src/cart.ts', language: 'typescript', content: 'export function validateCart() {}', version: 2, isSelected: true, isRecentlyEdited: true },
+          { path: 'src/payment.ts', language: 'typescript', content: 'export function chargeCard() {}', version: 1, isSelected: false, isRecentlyEdited: false },
+          { path: 'src/checkout.ts', language: 'typescript', content: 'export function checkout() {}', version: 1, isSelected: false, isRecentlyEdited: false },
+        ],
+      },
     }));
 
     expect(result.provider).toBe('deterministic');

@@ -7,6 +7,11 @@ import { tokenHash } from '../../lib/tokens';
 import { runAgentTurn } from '../../lib/agent/agent-loop';
 import { runAgentCommand } from '../../lib/agent/command-runner';
 import { approveProposal, createProposal, rejectProposal } from '../../lib/agent/proposals';
+import {
+  generateOpenAiCompatibleToolResponse,
+  type OpenAiCompatibleConfig,
+} from '../../lib/ai/openai-compatible-provider';
+import { generateEvaluationReport } from '../../lib/evaluation/generate-report';
 import type { AiToolCall, AiToolChatResult } from '../../lib/ai/types';
 import { createCandidateSessionFixture, getSeededAssessment, uniqueTestEmail } from '../helpers/session-fixtures';
 
@@ -220,6 +225,81 @@ test.describe('Agent mode (Slice 1)', () => {
       { params: { sessionToken } },
     );
     expect(response.status).toBe(409);
+  });
+
+  test('parses inline <|python_tag|> tool calls and strips raw markers from content', async () => {
+    const config: OpenAiCompatibleConfig = {
+      apiKey: 'k',
+      baseUrl: 'https://integrate.api.nvidia.com/v1',
+      model: 'meta/llama-3.3-70b-instruct',
+      temperature: 1,
+      topP: 0.95,
+      maxTokens: 4096,
+      thinking: false,
+      reasoningEffort: 'low',
+      timeoutMs: 7000,
+      maxRetries: 0,
+    };
+    const inline = '<|python_tag|>{"name": "propose_edit", "parameters": {"path": "src/cart.ts", "newContent": "// fixed\\n", "rationale": "tighten"}}';
+    const fetchImpl = async () =>
+      new Response(
+        JSON.stringify({
+          model: 'meta/llama-3.3-70b-instruct',
+          choices: [{ message: { role: 'assistant', content: inline, tool_calls: null }, finish_reason: 'stop' }],
+          usage: { prompt_tokens: 5, completion_tokens: 6 },
+        }),
+        { status: 200 },
+      );
+
+    const result = await generateOpenAiCompatibleToolResponse({
+      messages: [{ role: 'user', content: 'fix cart' }],
+      tools: [],
+      config,
+      fetchImpl,
+    });
+
+    expect(result.toolCalls).toHaveLength(1);
+    expect(result.toolCalls[0].name).toBe('propose_edit');
+    expect(result.toolCalls[0].args.path).toBe('src/cart.ts');
+    expect(result.content).not.toContain('<|python_tag|>');
+  });
+
+  test('agent-mode session scores with the ai-delegation-v1 rubric', async () => {
+    const { session } = await createAgentSessionFixture('agent-report');
+    const files = await db.fileSnapshot.findMany({ where: { sessionId: session.id } });
+
+    const approvedProposal = await createProposal({
+      sessionId: session.id,
+      toolCallId: 'c1',
+      path: files[0].path,
+      newContent: '// approved\n',
+      rationale: 'fix',
+    });
+    if (approvedProposal.ok) await approveProposal({ sessionId: session.id, proposalId: approvedProposal.proposal.id });
+
+    const rejectedProposal = await createProposal({
+      sessionId: session.id,
+      toolCallId: 'c2',
+      path: files[0].path,
+      newContent: '// rejected\n',
+    });
+    if (rejectedProposal.ok) {
+      await rejectProposal({ sessionId: session.id, proposalId: rejectedProposal.proposal.id, reason: 'not right' });
+    }
+
+    const report = await generateEvaluationReport(session.id);
+    const reportJson = JSON.parse(report.reportJson);
+
+    expect(reportJson.rubricVersion).toBe('ai-delegation-v1');
+    expect(reportJson.mode).toBe('agent');
+    expect(reportJson.dimensionScores).toHaveLength(6);
+    expect(reportJson.dimensionScores.map((dimension: { dimension: string }) => dimension.dimension)).toContain('Diff Review Rigor');
+
+    const refreshed = await db.candidateSession.findUniqueOrThrow({ where: { id: session.id } });
+    expect(refreshed.status).toBe('report_ready');
+
+    const dimensions = await db.scoreDimension.findMany({ where: { reportId: report.id } });
+    expect(dimensions).toHaveLength(6);
   });
 
   test('agent route approves a pending proposal in agent mode', async () => {

@@ -1,4 +1,5 @@
 import { db } from '@/lib/db';
+import { generateAgentDelegationReport } from '@/lib/evaluation/generate-agent-report';
 import { getSessionDiffEvidence } from '@/lib/diff/session-diff';
 import { readTokenUsage } from '@/lib/ai/token-usage';
 import { parseJson, toJson } from '@/lib/json';
@@ -164,6 +165,16 @@ function summarizeAiUsage(input: {
 }
 
 export async function generateEvaluationReport(sessionId: string) {
+  const routing = await db.candidateSession.findUnique({
+    where: { id: sessionId },
+    select: { assessment: { select: { aiMode: true } } },
+  });
+
+  // Agent-mode assessments are scored with the ai-delegation-v1 rubric.
+  if (routing?.assessment.aiMode === 'agent') {
+    return generateAgentDelegationReport(sessionId);
+  }
+
   const session = await db.candidateSession.findUnique({
     where: { id: sessionId },
     include: {

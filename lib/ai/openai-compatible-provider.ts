@@ -109,6 +109,19 @@ export function getOpenAiCompatibleConfig(): OpenAiCompatibleConfig {
   };
 }
 
+// Agent mode needs a tool-calling-capable model and enough output budget to
+// return full-file edits. These are separate from the coaching defaults so the
+// coaching assistant can stay on a small/fast model.
+export function getOpenAiCompatibleAgentConfig(): OpenAiCompatibleConfig {
+  const base = getOpenAiCompatibleConfig();
+  return {
+    ...base,
+    model: process.env.AGENT_MODEL || base.model,
+    maxTokens: toNumber(process.env.AGENT_MAX_TOKENS, Math.max(base.maxTokens, 4096)),
+    reasoningEffort: toReasoningEffort(process.env.AGENT_REASONING_EFFORT || process.env.AI_REASONING_EFFORT),
+  };
+}
+
 export function buildOpenAiCompatibleRequest(
   request: AiAssistantRequest,
   config: OpenAiCompatibleConfig,
@@ -296,6 +309,64 @@ function toWireMessage(message: AiChatMessage): WireMessage {
   return { role: message.role, content: message.content };
 }
 
+// Some models (notably Llama variants) emit tool calls as inline text using the
+// `<|python_tag|>{...}` format instead of the OpenAI tool_calls field. Extract
+// those as a fallback and strip the raw markers so they never reach the candidate.
+const SPECIAL_TOKEN_MARKERS = /<\|python_tag\|>|<\|eom_id\|>|<\|eot_id\|>|<\|start_header_id\|>|<\|end_header_id\|>/g;
+
+function extractJsonObjects(text: string): string[] {
+  const objects: string[] = [];
+  let depth = 0;
+  let start = -1;
+  let inString = false;
+  let escaped = false;
+
+  for (let i = 0; i < text.length; i += 1) {
+    const char = text[i];
+    if (inString) {
+      if (escaped) escaped = false;
+      else if (char === '\\') escaped = true;
+      else if (char === '"') inString = false;
+      continue;
+    }
+    if (char === '"') inString = true;
+    else if (char === '{') {
+      if (depth === 0) start = i;
+      depth += 1;
+    } else if (char === '}') {
+      depth -= 1;
+      if (depth === 0 && start >= 0) {
+        objects.push(text.slice(start, i + 1));
+        start = -1;
+      }
+    }
+  }
+
+  return objects;
+}
+
+function extractInlineToolCalls(content: string): { toolCalls: AiToolCall[]; cleaned: string } {
+  if (!content.includes('<|python_tag|>') && !content.includes('"parameters"')) {
+    return { toolCalls: [], cleaned: content };
+  }
+
+  const toolCalls: AiToolCall[] = [];
+  for (const blob of extractJsonObjects(content)) {
+    try {
+      const parsed = JSON.parse(blob) as Record<string, unknown>;
+      const name = typeof parsed.name === 'string' ? parsed.name : '';
+      if (!name) continue;
+      const rawArgs = (parsed.parameters || parsed.arguments || {}) as Record<string, unknown>;
+      toolCalls.push({ id: `inline_${name}_${toolCalls.length}`, name, args: rawArgs });
+    } catch {
+      // Truncated/invalid inline call — skip; markers still get stripped below.
+    }
+  }
+
+  const cleaned = content.replace(SPECIAL_TOKEN_MARKERS, '').trim();
+  return { toolCalls, cleaned };
+}
+
 function parseToolCalls(message: Record<string, unknown>): AiToolCall[] {
   const rawCalls = Array.isArray(message.tool_calls) ? message.tool_calls : [];
 
@@ -373,8 +444,18 @@ export async function generateOpenAiCompatibleToolResponse(input: {
   const choices = Array.isArray(parsed.choices) ? parsed.choices : [];
   const firstChoice = (choices[0] || {}) as Record<string, unknown>;
   const message = (firstChoice.message || {}) as Record<string, unknown>;
-  const content = readMessageString(message, 'content').trim();
-  const toolCalls = parseToolCalls(message);
+  const rawContent = readMessageString(message, 'content').trim();
+  let toolCalls = parseToolCalls(message);
+  let content = rawContent;
+
+  // Fallback: some models emit tool calls as inline <|python_tag|> text.
+  if (!toolCalls.length) {
+    const inline = extractInlineToolCalls(rawContent);
+    toolCalls = inline.toolCalls;
+    content = inline.cleaned;
+  } else {
+    content = rawContent.replace(SPECIAL_TOKEN_MARKERS, '').trim();
+  }
 
   if (!content && !toolCalls.length) {
     throw new Error('OpenAI-compatible response had neither content nor tool calls.');
