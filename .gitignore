@@ -10,3 +10,4 @@ tsconfig.tsbuildinfo
 output
 test-results
 .playwright-mcp
+judge0.conf

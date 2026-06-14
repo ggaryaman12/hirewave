@@ -1,0 +1,18 @@
+# Copy to judge0.conf and change passwords before any non-local use.
+# judge0.conf is gitignored so real credentials are never committed.
+
+REDIS_HOST=judge0-redis
+REDIS_PORT=6379
+REDIS_PASSWORD=judge0_local_redis_pw
+
+POSTGRES_HOST=judge0-db
+POSTGRES_PORT=5432
+POSTGRES_DB=judge0
+POSTGRES_USER=judge0
+POSTGRES_PASSWORD=judge0_local_pg_pw
+
+# Resource ceilings (per submission). Our app also sends per-problem limits.
+MAX_CPU_TIME_LIMIT=15
+MAX_WALL_TIME_LIMIT=30
+MAX_MEMORY_LIMIT=512000
+ENABLE_WAIT_RESULT=true
