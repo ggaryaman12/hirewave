@@ -236,6 +236,82 @@ model ScoreDimension {
   report                EvaluationReport @relation(fields: [reportId], references: [id], onDelete: Cascade)
 }
 
+model DsaTrack {
+  id        String     @id @default(cuid())
+  slug      String     @unique
+  title     String
+  source    String?
+  sortOrder Int        @default(0)
+  createdAt DateTime   @default(now())
+  topics    DsaTopic[]
+}
+
+model DsaTopic {
+  id        String       @id @default(cuid())
+  trackId   String
+  title     String
+  sortOrder Int          @default(0)
+  track     DsaTrack     @relation(fields: [trackId], references: [id], onDelete: Cascade)
+  problems  DsaProblem[]
+}
+
+model DsaProblem {
+  id                    String          @id @default(cuid())
+  topicId               String?
+  slug                  String          @unique
+  title                 String
+  difficulty            String          @default("medium")
+  statementMd           String
+  constraintsMd         String?
+  sourceUrl             String?
+  attribution           String?
+  inputFormat           String?
+  outputFormat          String?
+  comparison            String          @default("whitespace")
+  floatEpsilon          Float?
+  timeLimitMs           Int             @default(2000)
+  memoryLimitMb         Int             @default(256)
+  referenceSolutionJson String?
+  status                String          @default("draft")
+  createdAt             DateTime        @default(now())
+  updatedAt             DateTime        @updatedAt
+  topic                 DsaTopic?       @relation(fields: [topicId], references: [id])
+  testCases             DsaTestCase[]
+  submissions           DsaSubmission[]
+}
+
+model DsaTestCase {
+  id        String     @id @default(cuid())
+  problemId String
+  input     String
+  expected  String
+  isSample  Boolean    @default(false)
+  sortOrder Int        @default(0)
+  problem   DsaProblem @relation(fields: [problemId], references: [id], onDelete: Cascade)
+
+  @@index([problemId, sortOrder])
+}
+
+model DsaSubmission {
+  id          String     @id @default(cuid())
+  problemId   String
+  sessionId   String?
+  language    String
+  source      String
+  verdict     String     @default("judging")
+  passedCount Int        @default(0)
+  totalCount  Int        @default(0)
+  runtimeMs   Int?
+  memoryKb    Int?
+  failingCase Int?
+  message     String?
+  resultsJson String?
+  createdAt   DateTime   @default(now())
+  problem     DsaProblem @relation(fields: [problemId], references: [id], onDelete: Cascade)
+
+  @@index([problemId, createdAt])
+}
+
 model InviteLink {
   id           String             @id @default(cuid())
   assessmentId String
