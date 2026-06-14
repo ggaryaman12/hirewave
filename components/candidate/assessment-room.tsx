@@ -2,7 +2,7 @@
 
 import { Fragment, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { Bot, CheckCircle2, Clock, FileCode2, FileDiff as FileDiffIcon, Play, Send, Terminal, UploadCloud } from 'lucide-react';
+import { Bot, CheckCircle2, Clock, FileCode2, FileDiff as FileDiffIcon, Play, Send, Sparkles, Terminal, UploadCloud, X } from 'lucide-react';
 import { formatTokenUsage, type TokenUsage } from '@/lib/ai/token-usage';
 import { buildFileDiff, type FileDiff as CodeFileDiff } from '@/lib/diff/text-diff';
 import { cn } from '@/lib/utils';
@@ -120,7 +120,7 @@ export function AssessmentRoom({
   const [aiPending, setAiPending] = useState(false);
   const [pendingPrompt, setPendingPrompt] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
-  const [workspaceView, setWorkspaceView] = useState<'code' | 'changes'>('code');
+  const [workspaceView, setWorkspaceView] = useState<'code' | 'changes' | 'proposal'>('code');
   const [activeDiffPath, setActiveDiffPath] = useState('');
   const saveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const chatViewportRef = useRef<HTMLDivElement>(null);
@@ -157,6 +157,23 @@ export function AssessmentRoom({
       fileDiffs[0],
     [activeDiffPath, activePath, changedFileDiffs, fileDiffs],
   );
+  const pendingProposalByPath = useMemo(() => {
+    const map = new Map<string, AgentProposalView>();
+    for (const proposal of agentProposals) {
+      if (proposal.status === 'pending') map.set(proposal.path, proposal);
+    }
+    return map;
+  }, [agentProposals]);
+  const pendingProposals = useMemo(
+    () => agentProposals.filter((proposal) => proposal.status === 'pending'),
+    [agentProposals],
+  );
+  const activeProposal = pendingProposalByPath.get(activePath);
+
+  const openProposal = useCallback((path: string) => {
+    setActivePath(path);
+    setWorkspaceView('proposal');
+  }, []);
 
   const logEvent = useCallback((type: string, payload: Record<string, unknown>) => {
     fetch(`/api/session/${sessionToken}/events`, {
@@ -295,7 +312,10 @@ export function AssessmentRoom({
         ...current,
         ...(body.assistantMessages as AgentChatMessage[]).map((message) => ({ ...message, role: 'assistant' })),
       ]);
-      setAgentProposals(body.pendingProposals as AgentProposalView[]);
+      const pending = body.pendingProposals as AgentProposalView[];
+      setAgentProposals(pending);
+      // Surface the first proposed edit in the editor for review (Copilot-style).
+      if (pending.length) openProposal(pending[0].path);
     } catch (error) {
       setAgentPrompt(trimmed);
       logEvent('error_occurred', { message: error instanceof Error ? error.message : 'Agent request failed' });
@@ -316,7 +336,8 @@ export function AssessmentRoom({
       });
       if (!response.ok) throw new Error('Decision failed');
       const body = await response.json();
-      setAgentProposals(body.pendingProposals as AgentProposalView[]);
+      const remaining = body.pendingProposals as AgentProposalView[];
+      setAgentProposals(remaining);
 
       // Reflect an approved agent edit in the workspace immediately.
       if (decision === 'approve' && proposal.diff) {
@@ -328,6 +349,14 @@ export function AssessmentRoom({
               )
             : [...current, { path: proposal.path, language: proposal.diff?.language || 'text', content: newContent, version: 1 }],
         );
+      }
+
+      // Advance to the next pending edit, or drop back to the code view.
+      if (remaining.length) {
+        openProposal(remaining[0].path);
+      } else {
+        setActivePath(proposal.path);
+        setWorkspaceView('code');
       }
     } catch (error) {
       logEvent('error_occurred', { message: error instanceof Error ? error.message : 'Decision failed' });
@@ -380,19 +409,28 @@ export function AssessmentRoom({
             Files
           </div>
           <div className="mt-4 grid gap-1">
-            {files.map((file) => (
-              <button
-                key={file.path}
-                type="button"
-                onClick={() => openFile(file.path)}
-                className={cn(
-                  'truncate rounded-md px-3 py-2 text-left font-mono text-xs text-white/65 hover:bg-white/10 hover:text-white',
-                  activePath === file.path && 'bg-white/10 text-white',
-                )}
-              >
-                {file.path}
-              </button>
-            ))}
+            {files.map((file) => {
+              const hasProposal = pendingProposalByPath.has(file.path);
+              return (
+                <button
+                  key={file.path}
+                  type="button"
+                  onClick={() => (hasProposal ? openProposal(file.path) : openFile(file.path))}
+                  className={cn(
+                    'flex items-center justify-between gap-2 truncate rounded-md px-3 py-2 text-left font-mono text-xs text-white/65 hover:bg-white/10 hover:text-white',
+                    activePath === file.path && 'bg-white/10 text-white',
+                  )}
+                >
+                  <span className="truncate">{file.path}</span>
+                  {hasProposal && (
+                    <span className="inline-flex shrink-0 items-center gap-1 rounded-full bg-[#f15a29]/20 px-1.5 py-0.5 text-[9px] font-black text-[#f8b39c]">
+                      <Sparkles className="h-2.5 w-2.5" />
+                      edit
+                    </span>
+                  )}
+                </button>
+              );
+            })}
           </div>
 
           <div className="mt-6 rounded-lg border border-white/10 bg-white/[0.03] p-3">
@@ -431,23 +469,47 @@ export function AssessmentRoom({
                     <FileDiffIcon className="h-3.5 w-3.5" />
                     Changes
                   </button>
+                  {activeProposal && (
+                    <button
+                      type="button"
+                      onClick={() => setWorkspaceView('proposal')}
+                      aria-pressed={workspaceView === 'proposal'}
+                      className={cn(
+                        'inline-flex items-center gap-1.5 rounded px-2 text-xs font-bold text-[#f8b39c] hover:text-white',
+                        workspaceView === 'proposal' && 'bg-[#f15a29] text-white hover:text-white',
+                      )}
+                    >
+                      <Sparkles className="h-3.5 w-3.5" />
+                      Review edit
+                    </button>
+                  )}
                 </div>
               </div>
-              <span className="shrink-0 text-xs text-white/40">{saving ? 'Saving...' : 'Saved'}</span>
+              <span className="shrink-0 text-xs text-white/40">
+                {pendingProposals.length > 0 ? `${pendingProposals.length} proposed ${pendingProposals.length === 1 ? 'edit' : 'edits'}` : saving ? 'Saving...' : 'Saved'}
+              </span>
             </div>
-            {workspaceView === 'code' ? (
+            {workspaceView === 'proposal' && activeProposal ? (
+              <ProposalReview
+                proposal={activeProposal}
+                deciding={decisionPendingId === activeProposal.id}
+                disabled={closed || decisionPendingId !== null}
+                onDecide={decideProposal}
+                onDismiss={() => setWorkspaceView('code')}
+              />
+            ) : workspaceView === 'changes' ? (
+              <ChangesPanel
+                changedFiles={changedFileDiffs}
+                activeDiff={activeDiff}
+                onSelectPath={setActiveDiffPath}
+              />
+            ) : (
               <textarea
                 value={activeFile?.content || ''}
                 onChange={(event) => updateActiveFile(event.target.value)}
                 spellCheck={false}
                 disabled={closed}
                 className="min-h-0 flex-1 resize-none bg-[#101010] p-5 font-mono text-sm leading-6 text-white outline-none disabled:opacity-70"
-              />
-            ) : (
-              <ChangesPanel
-                changedFiles={changedFileDiffs}
-                activeDiff={activeDiff}
-                onSelectPath={setActiveDiffPath}
               />
             )}
           </section>
@@ -513,9 +575,7 @@ export function AssessmentRoom({
             setPrompt={setAgentPrompt}
             onSend={sendAgentMessage}
             pending={agentPending}
-            closed={closed}
-            decisionPendingId={decisionPendingId}
-            onDecide={decideProposal}
+            onOpenProposal={openProposal}
           />
         ) : (
         <aside className="flex min-h-[720px] flex-col border-l border-white/10 bg-[#151515] lg:min-h-0 lg:overflow-hidden">
@@ -817,9 +877,7 @@ function AgentPanel({
   setPrompt,
   onSend,
   pending,
-  closed,
-  decisionPendingId,
-  onDecide,
+  onOpenProposal,
 }: {
   messages: AgentChatMessage[];
   proposals: AgentProposalView[];
@@ -827,9 +885,7 @@ function AgentPanel({
   setPrompt: (value: string) => void;
   onSend: () => void;
   pending: boolean;
-  closed: boolean;
-  decisionPendingId: string | null;
-  onDecide: (proposal: AgentProposalView, decision: 'approve' | 'reject') => void;
+  onOpenProposal: (path: string) => void;
 }) {
   const pendingProposals = proposals.filter((proposal) => proposal.status === 'pending');
 
@@ -867,18 +923,12 @@ function AgentPanel({
         )}
 
         {pendingProposals.length > 0 && (
-          <div className="mt-4 grid gap-3">
+          <div className="mt-4 grid gap-2">
             <p className="text-[10px] font-black uppercase tracking-[0.16em] text-white/45">
-              Proposed edits ({pendingProposals.length}) — review before applying
+              Proposed edits ({pendingProposals.length}) — review in the editor
             </p>
             {pendingProposals.map((proposal) => (
-              <ProposalCard
-                key={proposal.id}
-                proposal={proposal}
-                disabled={closed || decisionPendingId !== null}
-                deciding={decisionPendingId === proposal.id}
-                onDecide={onDecide}
-              />
+              <ProposalCard key={proposal.id} proposal={proposal} onOpen={onOpenProposal} />
             ))}
           </div>
         )}
@@ -909,63 +959,98 @@ function AgentPanel({
 
 function ProposalCard({
   proposal,
-  disabled,
-  deciding,
-  onDecide,
+  onOpen,
 }: {
   proposal: AgentProposalView;
-  disabled: boolean;
-  deciding: boolean;
-  onDecide: (proposal: AgentProposalView, decision: 'approve' | 'reject') => void;
+  onOpen: (path: string) => void;
 }) {
-  const [expanded, setExpanded] = useState(false);
-
   return (
-    <div className="rounded-lg border border-[#f15a29]/25 bg-[#f15a29]/[0.05]">
-      <div className="flex flex-wrap items-center justify-between gap-2 border-b border-white/10 px-3 py-2">
-        <span className="truncate font-mono text-xs text-white/80">{proposal.path}</span>
+    <button
+      type="button"
+      onClick={() => onOpen(proposal.path)}
+      className="group flex w-full items-center justify-between gap-2 rounded-lg border border-[#f15a29]/25 bg-[#f15a29]/[0.05] px-3 py-2 text-left hover:bg-[#f15a29]/[0.12]"
+    >
+      <span className="min-w-0">
+        <span className="flex items-center gap-1.5">
+          <Sparkles className="h-3 w-3 shrink-0 text-[#f8b39c]" />
+          <span className="truncate font-mono text-xs text-white/85">{proposal.path}</span>
+        </span>
+        {proposal.rationale && <span className="mt-0.5 block truncate text-[11px] text-white/50">{proposal.rationale}</span>}
+      </span>
+      <span className="flex shrink-0 items-center gap-2">
         {proposal.diff && (
-          <span className="flex items-center gap-2 font-mono text-[10px]">
-            <span className="rounded bg-emerald-500/15 px-1.5 py-0.5 text-emerald-200">+{proposal.diff.additions}</span>
-            <span className="rounded bg-red-500/15 px-1.5 py-0.5 text-red-200">-{proposal.diff.deletions}</span>
+          <span className="font-mono text-[10px] text-white/50">
+            <span className="text-emerald-300">+{proposal.diff.additions}</span> <span className="text-red-300">-{proposal.diff.deletions}</span>
           </span>
         )}
-      </div>
-      {proposal.rationale && <p className="px-3 py-2 text-xs leading-5 text-white/65">{proposal.rationale}</p>}
+        <span className="rounded-md bg-white/10 px-2 py-1 text-[10px] font-black text-white/70 group-hover:bg-white group-hover:text-black">Review</span>
+      </span>
+    </button>
+  );
+}
 
-      <div className="px-3 pb-2">
-        <button
-          type="button"
-          onClick={() => setExpanded((value) => !value)}
-          className="text-[11px] font-bold text-white/55 underline-offset-2 hover:text-white hover:underline"
-        >
-          {expanded ? 'Hide diff' : 'Review diff'}
-        </button>
-      </div>
-      {expanded && proposal.diff && (
-        <div className="max-h-72 overflow-auto border-t border-white/10">
-          <SplitDiffViewer diff={proposal.diff} />
+function ProposalReview({
+  proposal,
+  deciding,
+  disabled,
+  onDecide,
+  onDismiss,
+}: {
+  proposal: AgentProposalView;
+  deciding: boolean;
+  disabled: boolean;
+  onDecide: (proposal: AgentProposalView, decision: 'approve' | 'reject') => void;
+  onDismiss: () => void;
+}) {
+  return (
+    <div className="flex min-h-0 flex-1 flex-col bg-[#101010]">
+      <div className="flex flex-wrap items-center justify-between gap-3 border-b border-[#f15a29]/30 bg-[#f15a29]/[0.08] px-4 py-2.5">
+        <div className="flex min-w-0 items-center gap-2">
+          <Sparkles className="h-4 w-4 shrink-0 text-[#f8b39c]" />
+          <div className="min-w-0">
+            <p className="truncate text-sm font-black text-white">Agent proposes editing {proposal.path}</p>
+            {proposal.rationale && <p className="truncate text-xs text-white/55">{proposal.rationale}</p>}
+          </div>
         </div>
-      )}
-
-      <div className="flex gap-2 border-t border-white/10 p-3">
-        <button
-          type="button"
-          disabled={disabled}
-          onClick={() => onDecide(proposal, 'approve')}
-          className="inline-flex h-8 flex-1 items-center justify-center gap-1.5 rounded-md bg-emerald-500 text-xs font-black text-black disabled:cursor-not-allowed disabled:opacity-45"
-        >
-          <CheckCircle2 className="h-3.5 w-3.5" />
-          {deciding ? 'Working' : 'Approve'}
-        </button>
-        <button
-          type="button"
-          disabled={disabled}
-          onClick={() => onDecide(proposal, 'reject')}
-          className="inline-flex h-8 flex-1 items-center justify-center rounded-md border border-white/15 text-xs font-black text-white/75 hover:bg-white/10 disabled:cursor-not-allowed disabled:opacity-45"
-        >
-          Reject
-        </button>
+        <div className="flex items-center gap-2">
+          {proposal.diff && (
+            <span className="font-mono text-xs">
+              <span className="text-emerald-300">+{proposal.diff.additions}</span> <span className="text-red-300">-{proposal.diff.deletions}</span>
+            </span>
+          )}
+          <button
+            type="button"
+            disabled={disabled}
+            onClick={() => onDecide(proposal, 'approve')}
+            className="inline-flex h-8 items-center gap-1.5 rounded-md bg-emerald-500 px-3 text-xs font-black text-black disabled:cursor-not-allowed disabled:opacity-45"
+          >
+            <CheckCircle2 className="h-3.5 w-3.5" />
+            {deciding ? 'Applying' : 'Approve'}
+          </button>
+          <button
+            type="button"
+            disabled={disabled}
+            onClick={() => onDecide(proposal, 'reject')}
+            className="inline-flex h-8 items-center gap-1.5 rounded-md border border-white/15 px-3 text-xs font-black text-white/75 hover:bg-white/10 disabled:cursor-not-allowed disabled:opacity-45"
+          >
+            <X className="h-3.5 w-3.5" />
+            Reject
+          </button>
+          <button
+            type="button"
+            onClick={onDismiss}
+            className="inline-flex h-8 items-center rounded-md px-2 text-xs font-bold text-white/50 hover:bg-white/10 hover:text-white"
+          >
+            Later
+          </button>
+        </div>
+      </div>
+      <div className="min-h-0 flex-1 overflow-auto">
+        {proposal.diff ? (
+          <SplitDiffViewer diff={proposal.diff} />
+        ) : (
+          <div className="p-6 text-sm text-white/55">Diff unavailable for this proposal.</div>
+        )}
       </div>
     </div>
   );
