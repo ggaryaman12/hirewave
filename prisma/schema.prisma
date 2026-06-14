@@ -265,6 +265,8 @@ model DsaProblem {
   constraintsMd         String?
   sourceUrl             String?
   attribution           String?
+  functionName          String?
+  signatureJson         String?
   inputFormat           String?
   outputFormat          String?
   comparison            String          @default("whitespace")
