@@ -1,5 +1,6 @@
 const { PrismaClient } = require('@prisma/client');
 const crypto = require('crypto');
+const { seedDsa } = require('./seed-dsa');
 
 const prisma = new PrismaClient();
 
@@ -532,6 +533,9 @@ async function main() {
       status: 'active',
     },
   });
+
+  // Slice 3: seed the DSA problem bank using the same prisma client instance.
+  await seedDsa(prisma);
 }
 
 main()
