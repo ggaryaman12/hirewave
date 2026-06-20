@@ -414,7 +414,10 @@ async function seedDsa(prisma) {
       referenceSolutionJson: problem.referenceSolution,
       sourceUrl: null,
       attribution: 'Original problem authored for the Hirewave DSA bank.',
-      status: 'published',
+      // Legacy stdin/stdout originals are superseded by the function-mode bank
+      // (seed-dsa-fn). Kept as 'draft' so the published experience is uniformly
+      // LeetCode-style function problems.
+      status: 'draft',
     };
 
     const problemRow = await prisma.dsaProblem.upsert({
