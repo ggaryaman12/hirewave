@@ -8,6 +8,7 @@ import { LogosMarquee } from '@/components/sections/logos-marquee';
 import { HowItWorks } from '@/components/sections/how-it-works';
 import { HorizontalDimensions } from '@/components/sections/horizontal-dimensions';
 import { ForCandidatesForEmployers } from '@/components/sections/for-candidates-for-employers';
+import { Verticals } from '@/components/sections/verticals';
 import { Proof } from '@/components/sections/proof';
 import { Pricing } from '@/components/sections/pricing';
 import { FAQ } from '@/components/sections/faq';
@@ -31,6 +32,7 @@ export function PageShell() {
             <LogosMarquee />
             <HowItWorks />
             <HorizontalDimensions />
+            <Verticals />
             <ForCandidatesForEmployers />
             <Proof />
             <Pricing />

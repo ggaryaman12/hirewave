@@ -7,7 +7,7 @@ import { cn } from '@/lib/utils';
 
 const links = [
   { href: '#how', label: 'How it works' },
-  { href: '#candidates', label: 'For candidates' },
+  { href: '/dsa', label: 'Practice DSA' },
   { href: '#employers', label: 'For employers' },
   { href: '#pricing', label: 'Pricing' },
 ];
@@ -84,13 +84,13 @@ export function Navbar() {
           className="flex items-center gap-2"
         >
           <a
-            href="/dashboard"
+            href="/login"
             className="hidden rounded-full px-3 py-2 text-sm text-black/65 transition-colors hover:text-black md:inline-flex"
           >
             Sign in
           </a>
           <a
-            href="/dashboard/assessments/new"
+            href="/signup"
             className="inline-flex items-center gap-2 rounded-full bg-[#0a0a0a] px-5 py-2.5 text-sm font-semibold text-paper transition-transform hover:scale-[1.03]"
           >
             Get started
