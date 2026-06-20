@@ -1,6 +1,7 @@
 import Link from 'next/link';
 import { ArrowLeft } from 'lucide-react';
 import { db } from '@/lib/db';
+import { boilerplatesFor } from '@/lib/dsa/boilerplate';
 import { ProblemWorkspace, type ProblemPayload } from '@/components/dsa/problem-workspace';
 
 export default async function DsaProblemPage({ params }: { params: { slug: string } }) {
@@ -41,6 +42,9 @@ export default async function DsaProblemPage({ params }: { params: { slug: strin
     outputFormat: problem.outputFormat,
     timeLimitMs: problem.timeLimitMs,
     memoryLimitMb: problem.memoryLimitMb,
+    functionMode: Boolean(problem.signatureJson),
+    functionName: problem.functionName,
+    boilerplates: boilerplatesFor(problem.signatureJson),
     samples: problem.testCases
       .filter((testCase) => testCase.isSample)
       .map((testCase) => ({ input: testCase.input, expected: testCase.expected })),

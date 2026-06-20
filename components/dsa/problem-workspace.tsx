@@ -1,11 +1,20 @@
 'use client';
 
 import { Fragment, useState } from 'react';
+import dynamic from 'next/dynamic';
 import Link from 'next/link';
-import { ArrowLeft, Clock, Cpu, Play, Send } from 'lucide-react';
+import { ArrowLeft, Clock, Cpu, Play, RotateCcw, Send } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
+// Monaco is browser-only — load it client-side without SSR.
+const MonacoEditor = dynamic(() => import('@monaco-editor/react').then((m) => m.default), {
+  ssr: false,
+  loading: () => <div className="flex-1 bg-[#1e1e1e] p-5 font-mono text-sm text-white/30">Loading editor…</div>,
+});
+
 export type ProblemSample = { input: string; expected: string };
+
+type Language = 'cpp' | 'java' | 'javascript';
 
 export type ProblemPayload = {
   title: string;
@@ -16,17 +25,23 @@ export type ProblemPayload = {
   outputFormat: string | null;
   timeLimitMs: number;
   memoryLimitMb: number;
+  functionMode: boolean;
+  functionName: string | null;
+  boilerplates: Record<Language, string>;
   samples: ProblemSample[];
 };
 
-type Language = 'python' | 'cpp' | 'java' | 'javascript';
-
 const LANGUAGES: { value: Language; label: string }[] = [
-  { value: 'python', label: 'Python' },
   { value: 'cpp', label: 'C++' },
   { value: 'java', label: 'Java' },
   { value: 'javascript', label: 'JavaScript' },
 ];
+
+const MONACO_LANGUAGE: Record<Language, string> = {
+  cpp: 'cpp',
+  java: 'java',
+  javascript: 'javascript',
+};
 
 // Mirrors lib/judge/types Verdict.
 type Verdict =
@@ -98,14 +113,19 @@ function difficultyChipClass(difficulty: string) {
 }
 
 export function ProblemWorkspace({ slug, problem }: { slug: string; problem: ProblemPayload }) {
-  const [language, setLanguage] = useState<Language>('python');
-  const [source, setSource] = useState('');
+  const [language, setLanguage] = useState<Language>('cpp');
+  // One source buffer per language, each seeded from its boilerplate. Switching
+  // languages preserves whatever the candidate has typed in the other buffers.
+  const [sources, setSources] = useState<Record<Language, string>>(() => ({ ...problem.boilerplates }));
   const [running, setRunning] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [runResults, setRunResults] = useState<RunResponse | null>(null);
   const [submitResult, setSubmitResult] = useState<SubmitResponse | null>(null);
   const [error, setError] = useState<string | null>(null);
 
+  const source = sources[language];
+  const setSource = (value: string) => setSources((prev) => ({ ...prev, [language]: value }));
+  const resetBoilerplate = () => setSources((prev) => ({ ...prev, [language]: problem.boilerplates[language] }));
   const pending = running || submitting;
 
   async function runSamples() {
@@ -259,6 +279,15 @@ export function ProblemWorkspace({ slug, problem }: { slug: string; problem: Pro
             <div className="flex items-center gap-2">
               <button
                 type="button"
+                disabled={pending}
+                onClick={resetBoilerplate}
+                title="Reset to starter code"
+                className="inline-flex h-8 w-8 items-center justify-center rounded-md border border-white/10 text-white/55 hover:bg-white/10 hover:text-white disabled:opacity-40"
+              >
+                <RotateCcw className="h-3.5 w-3.5" />
+              </button>
+              <button
+                type="button"
                 disabled={!source.trim() || pending}
                 onClick={runSamples}
                 className="inline-flex h-8 items-center gap-2 rounded-md border border-white/10 px-3 text-xs font-black text-white/75 hover:bg-white/10 disabled:cursor-not-allowed disabled:opacity-40"
@@ -278,13 +307,32 @@ export function ProblemWorkspace({ slug, problem }: { slug: string; problem: Pro
             </div>
           </div>
 
-          <textarea
-            value={source}
-            onChange={(event) => setSource(event.target.value)}
-            spellCheck={false}
-            placeholder={`Write your ${language} solution here. Read from stdin, write to stdout.`}
-            className="min-h-[280px] flex-1 resize-none bg-[#101010] p-5 font-mono text-sm leading-6 text-white outline-none placeholder:text-white/25"
-          />
+          {problem.functionMode && problem.functionName && (
+            <p className="border-b border-white/10 bg-white/[0.02] px-4 py-1.5 text-[11px] text-white/45">
+              Implement <code className="rounded bg-black/40 px-1 font-mono text-white/75">{problem.functionName}</code>. Input
+              parsing and output printing are handled for you.
+            </p>
+          )}
+
+          <div className="min-h-[280px] flex-1">
+            <MonacoEditor
+              language={MONACO_LANGUAGE[language]}
+              theme="vs-dark"
+              value={source}
+              onChange={(value) => setSource(value ?? '')}
+              options={{
+                fontSize: 13,
+                minimap: { enabled: false },
+                scrollBeyondLastLine: false,
+                tabSize: 4,
+                automaticLayout: true,
+                readOnly: pending,
+                lineNumbers: 'on',
+                renderWhitespace: 'selection',
+                fixedOverflowWidgets: true,
+              }}
+            />
+          </div>
 
           <div className="max-h-[45%] min-h-0 overflow-auto border-t border-white/10 p-4">
             {error && (

@@ -3,14 +3,23 @@ import { z } from 'zod';
 import { runSamples } from '@/lib/judge/submit';
 
 const schema = z.object({
-  language: z.string().min(1).max(40),
+  language: z.enum(['cpp', 'java', 'javascript']),
   source: z.string().min(1).max(200_000),
 });
 
 export async function POST(request: NextRequest, { params }: { params: { slug: string } }) {
-  const body = schema.parse(await request.json());
-  const result = await runSamples({ slug: params.slug, language: body.language, source: body.source });
+  let body: z.infer<typeof schema>;
+  try {
+    body = schema.parse(await request.json());
+  } catch {
+    return NextResponse.json({ error: 'Invalid request: language must be cpp/java/javascript and source non-empty.' }, { status: 400 });
+  }
 
-  if (!result) return NextResponse.json({ error: 'Problem not found' }, { status: 404 });
-  return NextResponse.json(result);
+  try {
+    const result = await runSamples({ slug: params.slug, language: body.language, source: body.source });
+    if (!result) return NextResponse.json({ error: 'Problem not found' }, { status: 404 });
+    return NextResponse.json(result);
+  } catch (err) {
+    return NextResponse.json({ error: err instanceof Error ? err.message : 'Run failed' }, { status: 500 });
+  }
 }

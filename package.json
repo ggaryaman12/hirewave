@@ -16,6 +16,7 @@
     "db:seed": "prisma db seed"
   },
   "dependencies": {
+    "@monaco-editor/react": "^4.6.0",
     "@prisma/client": "^6.19.0",
     "@react-three/drei": "^9.114.0",
     "@react-three/fiber": "^8.17.10",
