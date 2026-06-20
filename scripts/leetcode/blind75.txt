@@ -1,0 +1,36 @@
+# Blind 75 slugs that map to the function-mode harness (scalar/array/2D types).
+# Problems using ListNode/TreeNode/char-matrix are intentionally omitted (the
+# harness can't model them). Import: node scripts/leetcode/import.mjs --file scripts/leetcode/blind75.txt
+two-sum
+best-time-to-buy-and-sell-stock
+contains-duplicate
+product-of-array-except-self
+maximum-subarray
+maximum-product-subarray
+find-minimum-in-rotated-sorted-array
+search-in-rotated-sorted-array
+3sum
+container-with-most-water
+sum-of-two-integers
+number-of-1-bits
+counting-bits
+missing-number
+reverse-bits
+climbing-stairs
+coin-change
+longest-increasing-subsequence
+longest-common-subsequence
+word-break
+combination-sum
+house-robber
+house-robber-ii
+decode-ways
+unique-paths
+jump-game
+valid-anagram
+valid-parentheses
+valid-palindrome
+longest-substring-without-repeating-characters
+longest-repeating-character-replacement
+longest-consecutive-sequence
+two-sum-ii-input-array-is-sorted
