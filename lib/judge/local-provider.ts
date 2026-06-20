@@ -1,4 +1,5 @@
 import { spawnSync } from 'child_process';
+import { createHash } from 'crypto';
 import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'fs';
 import { tmpdir } from 'os';
 import { join } from 'path';
@@ -62,6 +63,39 @@ function fail(stderr: string, startedAt: number): JudgeRunResult {
   return { status: 'error', stdout: '', stderr, exitCode: null, signal: null, runtimeMs: Date.now() - startedAt, memoryKb: null };
 }
 
+// Compiled artifacts are cached by (language, source-hash) so running the same
+// source against many test cases compiles once. Persistent temp dirs are cleaned
+// up on process exit. Dev/test scope only.
+type Artifact = { cmd: string; args: string[]; dir: string } | { compileError: string };
+const artifactCache = new Map<string, Artifact>();
+const cacheDirs: string[] = [];
+let cleanupRegistered = false;
+
+function registerCleanup() {
+  if (cleanupRegistered) return;
+  cleanupRegistered = true;
+  process.once('exit', () => {
+    for (const dir of cacheDirs) {
+      try {
+        rmSync(dir, { recursive: true, force: true });
+      } catch {
+        /* best-effort */
+      }
+    }
+  });
+}
+
+function sourceKey(language: string, source: string): string {
+  return `${language}:${createHash('sha1').update(source).digest('hex')}`;
+}
+
+function newCacheDir(prefix: string): string {
+  const dir = mkdtempSync(join(tmpdir(), prefix));
+  cacheDirs.push(dir);
+  registerCleanup();
+  return dir;
+}
+
 export class LocalJudgeProvider implements JudgeProvider {
   id = 'local';
 
@@ -71,33 +105,45 @@ export class LocalJudgeProvider implements JudgeProvider {
     if (language === 'echo') {
       return { status: 'ok', stdout: input.stdin, stderr: '', exitCode: 0, signal: null, runtimeMs: 0, memoryKb: null };
     }
-    if (language === 'javascript' || language === 'node') return this.runJavaScript(input);
-    if (language === 'cpp' || language === 'c++') return this.runCpp(input);
-    if (language === 'java') return this.runJava(input);
+    let artifact: Artifact;
+    if (language === 'javascript' || language === 'node') artifact = this.buildJavaScript(input.source);
+    else if (language === 'cpp' || language === 'c++') artifact = this.buildCpp(input.source);
+    else if (language === 'java') artifact = this.buildJava(input.source);
+    else return fail(`Local provider does not support language "${input.language}". Use Judge0 in production.`, Date.now());
 
-    return fail(`Local provider does not support language "${input.language}". Use Judge0 in production.`, Date.now());
+    if ('compileError' in artifact) {
+      return { status: 'compile_error', stdout: '', stderr: artifact.compileError, exitCode: null, signal: null, runtimeMs: 0, memoryKb: null };
+    }
+    return this.execute(artifact.cmd, artifact.args, input, artifact.dir);
+  }
+
+  private cached(language: string, source: string, build: () => Artifact): Artifact {
+    const key = sourceKey(language, source);
+    const hit = artifactCache.get(key);
+    if (hit) return hit;
+    const built = build();
+    artifactCache.set(key, built);
+    return built;
   }
 
   // ---- JavaScript ---------------------------------------------------------
-  private runJavaScript(input: JudgeRunInput): JudgeRunResult {
-    const dir = mkdtempSync(join(tmpdir(), 'judge-js-'));
-    try {
+  private buildJavaScript(source: string): Artifact {
+    return this.cached('javascript', source, () => {
+      const dir = newCacheDir('judge-js-');
       const file = join(dir, 'main.js');
-      writeFileSync(file, input.source, 'utf8');
-      return this.execute('node', [file], input, dir);
-    } finally {
-      rmSync(dir, { recursive: true, force: true });
-    }
+      writeFileSync(file, source, 'utf8');
+      return { cmd: 'node', args: [file], dir };
+    });
   }
 
   // ---- C++ ----------------------------------------------------------------
-  private runCpp(input: JudgeRunInput): JudgeRunResult {
-    if (!which('g++')) return fail('g++ not found on host (local provider).', Date.now());
-    const dir = mkdtempSync(join(tmpdir(), 'judge-cpp-'));
-    try {
+  private buildCpp(source: string): Artifact {
+    if (!which('g++')) return { compileError: 'g++ not found on host (local provider).' };
+    return this.cached('cpp', source, () => {
+      const dir = newCacheDir('judge-cpp-');
       const src = join(dir, 'main.cpp');
       const bin = join(dir, 'main.out');
-      writeFileSync(src, input.source, 'utf8');
+      writeFileSync(src, source, 'utf8');
       mkdirSync(join(dir, 'bits'), { recursive: true });
       writeFileSync(join(dir, 'bits', 'stdc++.h'), BITS_STDCPP_SHIM, 'utf8');
       const compile = spawnSync('g++', ['-O2', '-std=c++17', `-I${dir}`, '-o', bin, src], {
@@ -105,35 +151,27 @@ export class LocalJudgeProvider implements JudgeProvider {
         timeout: COMPILE_TIMEOUT_MS,
         maxBuffer: 16 * 1024 * 1024,
       });
-      if (compile.status !== 0) {
-        return { status: 'compile_error', stdout: '', stderr: compile.stderr || 'compile failed', exitCode: compile.status, signal: compile.signal ?? null, runtimeMs: 0, memoryKb: null };
-      }
-      return this.execute(bin, [], input, dir);
-    } finally {
-      rmSync(dir, { recursive: true, force: true });
-    }
+      if (compile.status !== 0) return { compileError: compile.stderr || 'compile failed' };
+      return { cmd: bin, args: [], dir };
+    });
   }
 
   // ---- Java ---------------------------------------------------------------
-  private runJava(input: JudgeRunInput): JudgeRunResult {
-    if (!which('javac') || !which('java')) return fail('JDK (javac/java) not found on host (local provider).', Date.now());
-    const dir = mkdtempSync(join(tmpdir(), 'judge-java-'));
-    try {
+  private buildJava(source: string): Artifact {
+    if (!which('javac') || !which('java')) return { compileError: 'JDK (javac/java) not found on host (local provider).' };
+    return this.cached('java', source, () => {
+      const dir = newCacheDir('judge-java-');
       // The harness emits `public class Main`, so the file must be Main.java.
       const src = join(dir, 'Main.java');
-      writeFileSync(src, input.source, 'utf8');
+      writeFileSync(src, source, 'utf8');
       const compile = spawnSync('javac', ['-d', dir, src], {
         encoding: 'utf8',
         timeout: COMPILE_TIMEOUT_MS,
         maxBuffer: 16 * 1024 * 1024,
       });
-      if (compile.status !== 0) {
-        return { status: 'compile_error', stdout: '', stderr: compile.stderr || 'compile failed', exitCode: compile.status, signal: compile.signal ?? null, runtimeMs: 0, memoryKb: null };
-      }
-      return this.execute('java', ['-cp', dir, 'Main'], input, dir);
-    } finally {
-      rmSync(dir, { recursive: true, force: true });
-    }
+      if (compile.status !== 0) return { compileError: compile.stderr || 'compile failed' };
+      return { cmd: 'java', args: ['-cp', dir, 'Main'], dir };
+    });
   }
 
   // ---- Shared run step ----------------------------------------------------
