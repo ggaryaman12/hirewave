@@ -21,6 +21,12 @@ function effectiveSource(problem: WrapInput, language: string, source: string) {
   return source;
 }
 
+// Compiler stderr can include absolute temp paths (local dev judge); show just
+// the source filename so errors read cleanly (Judge0 already does this).
+function cleanCompilerOutput(stderr: string): string {
+  return stderr.replace(/\/\S*?(main\.\w+)/g, '$1');
+}
+
 function resolveRun(run?: JudgeRunFn): JudgeRunFn {
   if (run) return run;
   const provider = getJudgeProvider();
@@ -73,7 +79,7 @@ export async function submitSolution(input: {
       runtimeMs: grade.runtimeMs,
       memoryKb: grade.memoryKb,
       failingCase: grade.failingCase,
-      message: grade.message,
+      message: grade.message ? cleanCompilerOutput(grade.message) : grade.message,
       resultsJson: toJson(grade.results),
     },
   });
@@ -147,10 +153,17 @@ export async function runSamples(input: {
       timeLimitMs: problem.timeLimitMs,
       memoryLimitMb: problem.memoryLimitMb,
     });
+
+    // A compile error is a property of the SOURCE, not of any single test case —
+    // surface it once, upfront, and stop (don't repeat it per sample).
+    if (runResult.status === 'compile_error') {
+      return { sampleCount: samples.length, compileError: cleanCompilerOutput(runResult.stderr).slice(0, 4000), results: [] };
+    }
+
     const passed =
       runResult.status === 'ok' && compareOutput(sample.expected, runResult.stdout, comparison, problem.floatEpsilon ?? undefined);
     const status: Verdict = runResult.status !== 'ok'
-      ? (runResult.status === 'tle' ? 'tle' : runResult.status === 'compile_error' ? 'compile_error' : runResult.status === 'runtime_error' ? 'runtime_error' : 'error')
+      ? (runResult.status === 'tle' ? 'tle' : runResult.status === 'runtime_error' ? 'runtime_error' : 'error')
       : passed ? 'accepted' : 'wrong_answer';
 
     results.push({
@@ -164,5 +177,5 @@ export async function runSamples(input: {
     });
   }
 
-  return { sampleCount: samples.length, results };
+  return { sampleCount: samples.length, compileError: null as string | null, results };
 }

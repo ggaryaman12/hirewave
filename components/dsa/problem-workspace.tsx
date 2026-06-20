@@ -68,7 +68,7 @@ type RunResult = {
   stderr: string;
   runtimeMs: number;
 };
-type RunResponse = { sampleCount: number; results: RunResult[] };
+type RunResponse = { sampleCount: number; results: RunResult[]; compileError?: string | null };
 
 // Shape returned by submitSolution. NOTE: per-test results contain ONLY index +
 // status + timing — no hidden inputs/outputs.
@@ -400,11 +400,31 @@ export function ProblemWorkspace({ slug, problem }: { slug: string; problem: Pro
               </p>
             )}
 
-            {runResults && <RunResultsView data={runResults} />}
+            {runResults?.compileError ? (
+              <CompileErrorBanner stderr={runResults.compileError} />
+            ) : (
+              runResults && <RunResultsView data={runResults} />
+            )}
             {submitResult && <SubmitResultView data={submitResult} />}
           </div>
         </section>
       </div>
+    </div>
+  );
+}
+
+function CompileErrorBanner({ stderr }: { stderr: string }) {
+  return (
+    <div className="grid gap-2">
+      <div className="flex items-center gap-2">
+        <span className="rounded-md bg-red-500/15 px-3 py-1 text-sm font-black uppercase tracking-[0.08em] text-red-200">
+          Compile error
+        </span>
+        <span className="text-xs text-white/45">Your code didn&apos;t compile — fix the errors below and run again.</span>
+      </div>
+      <pre className="max-h-72 overflow-auto whitespace-pre-wrap rounded-md border border-red-500/30 bg-black/40 p-3 font-mono text-xs leading-5 text-red-200">
+        {stderr.trim() || 'Compilation failed.'}
+      </pre>
     </div>
   );
 }
@@ -445,6 +465,10 @@ function RunResultsView({ data }: { data: RunResponse }) {
 }
 
 function SubmitResultView({ data }: { data: SubmitResponse }) {
+  // Compile errors aren't a per-test outcome — show them once, upfront.
+  if (data.verdict === 'compile_error') {
+    return <CompileErrorBanner stderr={data.message || 'Compilation failed.'} />;
+  }
   return (
     <div className="grid gap-3">
       <div className="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-white/10 bg-white/[0.03] p-3">
