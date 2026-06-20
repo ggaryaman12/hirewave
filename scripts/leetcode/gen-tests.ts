@@ -56,36 +56,52 @@ function resolveMode(args: string[]): 'ollama' | 'openai' | 'both' {
   return 'openai';
 }
 
-async function callLLM(provider: Provider, prompt: string): Promise<string> {
+const MAX_ATTEMPTS = Number(process.env.AI_HINTS_MAX_ATTEMPTS || 4);
+
+async function once(provider: Provider, prompt: string): Promise<Response> {
   const ctrl = new AbortController();
   const timer = setTimeout(() => ctrl.abort(), TIMEOUT_MS);
   try {
     if (provider === 'ollama') {
       const baseUrl = (process.env.OLLAMA_BASE_URL || '').replace(/\/+$/, '');
       const model = process.env.OLLAMA_MODEL || '';
-      const res = await fetch(`${baseUrl}/api/chat`, {
+      return await fetch(`${baseUrl}/api/chat`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ model, stream: false, messages: [{ role: 'user', content: prompt }], options: { temperature: 0.2 } }),
         signal: ctrl.signal,
       });
-      if (!res.ok) throw new Error(`Ollama ${res.status}`);
-      return ((await res.json()) as { message?: { content?: string } }).message?.content || '';
     }
     const baseUrl = (process.env.AI_BASE_URL || process.env.OPENAI_BASE_URL || '').replace(/\/+$/, '');
     const apiKey = process.env.AI_API_KEY || process.env.NVIDIA_API_KEY || process.env.OPENAI_API_KEY || '';
-    const model = process.env.AI_MODEL || 'meta/llama-3.1-8b-instruct';
-    const res = await fetch(`${baseUrl}/chat/completions`, {
+    const model = process.env.GEN_TESTS_MODEL || process.env.AI_MODEL || 'meta/llama-3.1-8b-instruct';
+    return await fetch(`${baseUrl}/chat/completions`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${apiKey}` },
       body: JSON.stringify({ model, messages: [{ role: 'user', content: prompt }], temperature: 0.2, max_tokens: 1200 }),
       signal: ctrl.signal,
     });
-    if (!res.ok) throw new Error(`LLM ${res.status}`);
-    return ((await res.json()) as { choices?: { message?: { content?: string } }[] }).choices?.[0]?.message?.content || '';
   } finally {
     clearTimeout(timer);
   }
+}
+
+// Retries on 429/5xx (502s from Yelo are common) + network errors.
+async function callLLM(provider: Provider, prompt: string): Promise<string> {
+  let lastErr = '';
+  for (let attempt = 0; attempt < MAX_ATTEMPTS; attempt += 1) {
+    if (attempt > 0) await sleep(Math.min(12000, 800 * 2 ** (attempt - 1)) + Math.floor(Math.random() * 400));
+    try {
+      const res = await once(provider, prompt);
+      if (res.status === 429 || res.status >= 500) { lastErr = `${provider} ${res.status}`; continue; }
+      if (!res.ok) throw new Error(`${provider} ${res.status}`);
+      if (provider === 'ollama') return ((await res.json()) as { message?: { content?: string } }).message?.content || '';
+      return ((await res.json()) as { choices?: { message?: { content?: string } }[] }).choices?.[0]?.message?.content || '';
+    } catch (err) {
+      lastErr = err instanceof Error ? err.message : String(err);
+    }
+  }
+  throw new Error(lastErr || 'LLM request failed');
 }
 
 function buildPrompt(statement: string, sig: Signature, samples: { input: string; expected: string }[]): string {
