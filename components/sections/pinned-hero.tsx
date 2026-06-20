@@ -4,7 +4,6 @@ import { motion, useScroll, useTransform, useSpring, MotionValue } from 'framer-
 import { ArrowRight } from 'lucide-react';
 import { OrbitalRings } from '@/components/ui/orbital-rings';
 import { GeometricLines } from '@/components/ui/geometric-lines';
-import { ThreeHeroMount } from '@/components/ui/three-hero-mount';
 
 // Word-reveal tied to a MotionValue window [start,end]
 function ScrollWord({
@@ -91,13 +90,10 @@ export function PinnedHero() {
         {/* Geometric diagonal lines (paper-friendly) */}
         <GeometricLines className="z-[1] opacity-40 [&_*]:!stroke-black/10" />
 
-        {/* Real WebGL crystalline centerpiece — right half, behind the orbital frame */}
-        <ThreeHeroMount className="pointer-events-none absolute right-[-8%] top-1/2 z-[2] hidden h-[680px] w-[680px] -translate-y-1/2 lg:block" />
-
-        {/* Orbital spinner — frames the 3D core */}
+        {/* Orbital spinner — fills right half */}
         <motion.div
           style={{ opacity: ringOpacity, scale: ringScale, rotate: ringRotate }}
-          className="pointer-events-none absolute right-[-6%] top-1/2 z-[2] hidden h-[640px] w-[640px] -translate-y-1/2 opacity-50 lg:block"
+          className="absolute right-[-6%] top-1/2 z-[2] hidden h-[640px] w-[640px] -translate-y-1/2 lg:block"
         >
           <OrbitalRings />
         </motion.div>
