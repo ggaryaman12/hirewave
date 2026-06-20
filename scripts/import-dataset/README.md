@@ -16,10 +16,13 @@ Imports real competitive-programming problems (Codeforces / AtCoder / CodeChef /
 
 ```bash
 pip install datasets
-python scripts/import-dataset/download.py --out /tmp/cc.jsonl --limit 200 --max-rating 1600
+# ALL difficulties (default, no rating cap):
+python scripts/import-dataset/download.py --out /tmp/cc.jsonl --limit 500
+# or cap difficulty by Codeforces rating:
+python scripts/import-dataset/download.py --out /tmp/cc.jsonl --limit 500 --max-rating 1600
 ```
 
-Writes a slim JSONL (only the fields the transform uses).
+Writes a slim JSONL (only the fields the transform uses, including `cf_tags`).
 
 ## 2. Load into the DB
 
@@ -29,6 +32,18 @@ npx tsx scripts/import-dataset/load.ts /tmp/cc.jsonl --limit 200
 
 Idempotent (upsert by slug). Problems go into the **Imported (CC BY)** track,
 bucketed by difficulty, all `status:'review'`.
+
+## 2b. (Optional) Generate hints
+
+Imported problems have no hints. Backfill ORIGINAL model-written hints:
+
+```bash
+AI_HINTS_BASE_URL=https://api.openai.com/v1 AI_HINTS_API_KEY=sk-... AI_HINTS_MODEL=gpt-4o-mini \
+  npx tsx scripts/dsa/gen-hints.ts --status review --limit 200
+```
+
+Algorithmic category tags (`dp`, `graphs`, …) come straight from the dataset's
+`cf_tags` and are loaded automatically — no extra step.
 
 ## 3. Review + publish
 

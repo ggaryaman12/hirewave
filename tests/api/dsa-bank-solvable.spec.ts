@@ -27,7 +27,8 @@ type GenProblem = {
 function loadProblems(): GenProblem[] {
   return readdirSync(GEN_DIR)
     .filter((f) => f.endsWith('.json') && f !== 'index.json' && f !== 'tracks.json')
-    .map((f) => JSON.parse(readFileSync(join(GEN_DIR, f), 'utf8')) as GenProblem);
+    .map((f) => JSON.parse(readFileSync(join(GEN_DIR, f), 'utf8')) as GenProblem)
+    .filter((p) => Boolean(p.signatureJson)); // function-mode only; design covered separately
 }
 
 test.describe('DSA bank solvability (JS reference, full suites)', () => {
@@ -35,10 +36,12 @@ test.describe('DSA bank solvability (JS reference, full suites)', () => {
   let references: Record<string, (...args: unknown[]) => unknown>;
 
   test.beforeAll(async () => {
-    const mod = (await import('../../scripts/dsa/problems.mjs')) as {
-      PROBLEMS: { slug: string; signature: { functionName: string }; reference: (...args: unknown[]) => unknown }[];
-    };
-    references = Object.fromEntries(mod.PROBLEMS.map((p) => [p.slug, p.reference]));
+    type FnProblem = { slug: string; reference: (...args: unknown[]) => unknown };
+    const core = (await import('../../scripts/dsa/problems.mjs')) as { PROBLEMS: FnProblem[] };
+    const rw = (await import('../../scripts/dsa/realworld-problems.mjs')) as { RW_FUNCTION_PROBLEMS: FnProblem[] };
+    references = Object.fromEntries(
+      [...core.PROBLEMS, ...rw.RW_FUNCTION_PROBLEMS].map((p) => [p.slug, p.reference]),
+    );
   });
 
   for (const problem of loadProblems()) {

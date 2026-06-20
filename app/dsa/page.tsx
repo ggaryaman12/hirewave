@@ -13,6 +13,16 @@ function difficultyClass(difficulty: string) {
   return DIFFICULTY_STYLES[difficulty.toLowerCase()] ?? 'bg-white/10 text-white/60';
 }
 
+function parseTags(json: string | null): string[] {
+  if (!json) return [];
+  try {
+    const parsed = JSON.parse(json);
+    return Array.isArray(parsed) ? parsed.filter((x): x is string => typeof x === 'string') : [];
+  } catch {
+    return [];
+  }
+}
+
 export default async function DsaPage() {
   const tracks = await db.dsaTrack.findMany({
     orderBy: { sortOrder: 'asc' },
@@ -88,8 +98,20 @@ export default async function DsaPage() {
                             href={`/dsa/${problem.slug}`}
                             className="group flex items-center justify-between gap-3 rounded-lg border border-white/10 bg-[#151515] px-4 py-3 transition hover:border-[#f15a29]/40 hover:bg-white/[0.06]"
                           >
-                            <span className="min-w-0 truncate text-sm font-bold text-white/85 group-hover:text-white">
-                              {problem.title}
+                            <span className="flex min-w-0 items-center gap-2">
+                              <span className="min-w-0 truncate text-sm font-bold text-white/85 group-hover:text-white">
+                                {problem.title}
+                              </span>
+                              {parseTags(problem.companyTagsJson).map((company) => (
+                                <span key={company} className="hidden shrink-0 rounded-full bg-[#f15a29]/15 px-2 py-0.5 text-[9px] font-black uppercase tracking-[0.1em] text-[#f7a07f] sm:inline">
+                                  {company}
+                                </span>
+                              ))}
+                              {problem.kind === 'design' && (
+                                <span className="hidden shrink-0 rounded-full bg-sky-500/15 px-2 py-0.5 text-[9px] font-black uppercase tracking-[0.1em] text-sky-200 sm:inline">
+                                  design
+                                </span>
+                              )}
                             </span>
                             <span className="flex shrink-0 items-center gap-3">
                               <span

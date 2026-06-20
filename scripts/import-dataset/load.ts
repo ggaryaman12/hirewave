@@ -57,10 +57,12 @@ async function main() {
       title: problem.title,
       difficulty: problem.difficulty,
       statementMd: problem.statementMd,
+      kind: 'stdin', // imported competitive problems are stdin/stdout
       comparison: problem.comparison,
       floatEpsilon: problem.floatEpsilon,
       attribution: problem.attribution,
       sourceUrl: problem.sourceUrl,
+      categoryTagsJson: problem.categoryTags.length ? JSON.stringify(problem.categoryTags) : null,
       status: 'review', // human-review gate before publishing
     };
 

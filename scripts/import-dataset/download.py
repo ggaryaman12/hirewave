@@ -15,7 +15,7 @@ import argparse
 import json
 
 
-KEEP = ("name", "description", "source", "difficulty", "cf_rating",
+KEEP = ("name", "description", "source", "difficulty", "cf_rating", "cf_tags",
         "public_tests", "private_tests", "generated_tests")
 
 
@@ -24,8 +24,8 @@ def main() -> None:
     parser.add_argument("--out", required=True, help="output JSONL path")
     parser.add_argument("--limit", type=int, default=200, help="max problems")
     parser.add_argument("--split", default="train", choices=["train", "valid", "test"])
-    parser.add_argument("--max-rating", type=int, default=1600,
-                        help="skip problems harder than this Codeforces rating (0 = no filter)")
+    parser.add_argument("--max-rating", type=int, default=0,
+                        help="skip problems harder than this Codeforces rating (0 = no filter, import ALL difficulties)")
     args = parser.parse_args()
 
     from datasets import load_dataset  # imported lazily so --help works without the dep

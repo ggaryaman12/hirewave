@@ -11,6 +11,7 @@ export type RawRow = {
   source?: number; // code_contests source enum
   difficulty?: number;
   cf_rating?: number;
+  cf_tags?: string[]; // algorithmic tags (dp, graphs, greedy, ...)
   public_tests?: RawTests;
   private_tests?: RawTests;
   generated_tests?: RawTests;
@@ -26,6 +27,7 @@ export type NormalizedProblem = {
   floatEpsilon: number | null;
   attribution: string;
   sourceUrl: string | null;
+  categoryTags: string[];
   testCases: NormalizedTestCase[];
 };
 
@@ -101,6 +103,9 @@ export function transformRow(row: RawRow, options: TransformOptions = {}): Norma
 
   const { comparison, floatEpsilon } = inferComparison(description);
   const sourceLabel = SOURCE_LABEL[row.source ?? 0] ?? 'Unknown source';
+  const categoryTags = Array.isArray(row.cf_tags)
+    ? [...new Set(row.cf_tags.filter((t) => typeof t === 'string' && t.trim()))].slice(0, 8)
+    : [];
 
   return {
     slug: slugify(name),
@@ -111,6 +116,7 @@ export function transformRow(row: RawRow, options: TransformOptions = {}): Norma
     floatEpsilon,
     attribution: `Imported from the DeepMind code_contests dataset (CC BY 4.0). Original problem: ${sourceLabel}.`,
     sourceUrl: null,
+    categoryTags,
     testCases,
   };
 }

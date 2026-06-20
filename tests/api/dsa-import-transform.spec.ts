@@ -6,6 +6,7 @@ const baseRow: RawRow = {
   description: 'Pete and Billy want to split a watermelon...',
   source: 2,
   cf_rating: 800,
+  cf_tags: ['math', 'brute force', 'math'],
   public_tests: { input: ['8\n'], output: ['YES\n'] },
   private_tests: { input: ['2\n', '3\n'], output: ['NO\n', 'NO\n'] },
   generated_tests: { input: ['100\n'], output: ['YES\n'] },
@@ -25,6 +26,11 @@ test.describe('code_contests transform (pure)', () => {
     expect(p.difficulty).toBe('easy'); // cf_rating 800 < 1200
     expect(p.attribution).toContain('CC BY 4.0');
     expect(p.attribution).toContain('Codeforces');
+  });
+
+  test('captures cf_tags as deduped category tags', () => {
+    const p = transformRow(baseRow)!;
+    expect(p.categoryTags).toEqual(['math', 'brute force']);
   });
 
   test('flags public tests as samples, private/generated as hidden', () => {
