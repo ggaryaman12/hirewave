@@ -22,7 +22,9 @@ KEEP = ("name", "description", "source", "difficulty", "cf_rating", "cf_tags",
 def main() -> None:
     parser = argparse.ArgumentParser()
     parser.add_argument("--out", required=True, help="output JSONL path")
-    parser.add_argument("--limit", type=int, default=200, help="max problems")
+    parser.add_argument("--limit", type=int, default=200, help="max problems to write")
+    parser.add_argument("--skip", type=int, default=0,
+                        help="skip the first N qualifying problems (use to continue past a previous run)")
     parser.add_argument("--split", default="train", choices=["train", "valid", "test"])
     parser.add_argument("--max-rating", type=int, default=0,
                         help="skip problems harder than this Codeforces rating (0 = no filter, import ALL difficulties)")
@@ -32,7 +34,11 @@ def main() -> None:
 
     ds = load_dataset("deepmind/code_contests", split=args.split, streaming=True)
 
+    # The stream order is stable, so --skip lets the NEXT run continue past what
+    # you already imported. e.g. run 1: --limit 500; run 2: --skip 500 --limit 500.
+    # (load.ts also upserts by slug, so accidental overlap never duplicates.)
     written = 0
+    skipped = 0
     with open(args.out, "w", encoding="utf-8") as fh:
         for row in ds:
             if written >= args.limit:
@@ -44,11 +50,15 @@ def main() -> None:
                 continue
             if args.max_rating and (row.get("cf_rating") or 0) > args.max_rating:
                 continue
+            # Skip the first --skip qualifying problems (already imported earlier).
+            if skipped < args.skip:
+                skipped += 1
+                continue
             slim = {k: row.get(k) for k in KEEP}
             fh.write(json.dumps(slim, ensure_ascii=False) + "\n")
             written += 1
 
-    print(f"Wrote {written} problems to {args.out}")
+    print(f"Wrote {written} problems to {args.out} (skipped first {skipped})")
     print("Next: npx tsx scripts/import-dataset/load.ts", args.out)
 
 

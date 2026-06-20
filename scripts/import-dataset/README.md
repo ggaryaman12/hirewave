@@ -18,6 +18,8 @@ Imports real competitive-programming problems (Codeforces / AtCoder / CodeChef /
 pip install datasets
 # ALL difficulties (default, no rating cap):
 python scripts/import-dataset/download.py --out /tmp/cc.jsonl --limit 500
+# NEXT batch later (continue past the first 500 — stream order is stable):
+python scripts/import-dataset/download.py --out /tmp/cc2.jsonl --skip 500 --limit 500
 # or cap difficulty by Codeforces rating:
 python scripts/import-dataset/download.py --out /tmp/cc.jsonl --limit 500 --max-rating 1600
 ```
