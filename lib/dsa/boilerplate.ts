@@ -1,9 +1,11 @@
 import { getAllBoilerplates, parseSignature, type HarnessLanguage } from '@/lib/judge/harness';
+import { getAllDesignBoilerplates, parseDesignSpec } from '@/lib/judge/harness/design';
 
 export type Boilerplates = Record<HarnessLanguage, string>;
 
-// Plain stdin/stdout starters for problems WITHOUT a function signature. The
-// candidate reads from stdin and writes to stdout themselves.
+// Plain stdin/stdout starters for problems WITHOUT a function signature or design
+// spec (e.g. imported competitive problems). The candidate reads stdin / writes
+// stdout themselves.
 const STDIN_STARTERS: Boilerplates = {
   cpp: `#include <bits/stdc++.h>
 using namespace std;
@@ -32,11 +34,17 @@ const next = () => _input[_ptr++];
 `,
 };
 
-// Resolves the per-language starter code shown in the editor. Function-mode
-// problems (signatureJson set) get the typed function stub; everything else
-// gets the stdin/stdout starter.
-export function boilerplatesFor(signatureJson: string | null | undefined): Boilerplates {
-  const signature = parseSignature(signatureJson);
+// Resolves the per-language starter code shown in the editor:
+//   design   -> class + constructor + method stubs (operations driver hidden)
+//   function -> typed function stub (LeetCode-style)
+//   stdin    -> stdin/stdout starter
+export function boilerplatesFor(input: {
+  signatureJson?: string | null;
+  designSpecJson?: string | null;
+}): Boilerplates {
+  const design = parseDesignSpec(input.designSpecJson);
+  if (design) return getAllDesignBoilerplates(design);
+  const signature = parseSignature(input.signatureJson);
   if (signature) return getAllBoilerplates(signature);
   return STDIN_STARTERS;
 }

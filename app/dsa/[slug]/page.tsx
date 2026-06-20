@@ -4,6 +4,16 @@ import { db } from '@/lib/db';
 import { boilerplatesFor } from '@/lib/dsa/boilerplate';
 import { ProblemWorkspace, type ProblemPayload } from '@/components/dsa/problem-workspace';
 
+function parseStringArray(json: string | null): string[] {
+  if (!json) return [];
+  try {
+    const parsed = JSON.parse(json);
+    return Array.isArray(parsed) ? parsed.filter((x): x is string => typeof x === 'string') : [];
+  } catch {
+    return [];
+  }
+}
+
 export default async function DsaProblemPage({ params }: { params: { slug: string } }) {
   const problem = await db.dsaProblem.findUnique({
     where: { slug: params.slug },
@@ -42,9 +52,13 @@ export default async function DsaProblemPage({ params }: { params: { slug: strin
     outputFormat: problem.outputFormat,
     timeLimitMs: problem.timeLimitMs,
     memoryLimitMb: problem.memoryLimitMb,
-    functionMode: Boolean(problem.signatureJson),
+    kind: problem.kind,
+    functionMode: Boolean(problem.signatureJson) || Boolean(problem.designSpecJson),
     functionName: problem.functionName,
-    boilerplates: boilerplatesFor(problem.signatureJson),
+    boilerplates: boilerplatesFor(problem),
+    categoryTags: parseStringArray(problem.categoryTagsJson),
+    companyTags: parseStringArray(problem.companyTagsJson),
+    hints: parseStringArray(problem.hintsJson),
     samples: problem.testCases
       .filter((testCase) => testCase.isSample)
       .map((testCase) => ({ input: testCase.input, expected: testCase.expected })),

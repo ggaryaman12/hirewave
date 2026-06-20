@@ -267,6 +267,10 @@ model DsaProblem {
   attribution           String?
   functionName          String?
   signatureJson         String?
+  // kind: 'function' (LeetCode-style, signatureJson) | 'stdin' (imported
+  // competitive) | 'design' (OOD, designSpecJson). Drives boilerplate + harness.
+  kind                  String          @default("function")
+  designSpecJson        String?
   inputFormat           String?
   outputFormat          String?
   comparison            String          @default("whitespace")
@@ -274,6 +278,11 @@ model DsaProblem {
   timeLimitMs           Int             @default(2000)
   memoryLimitMb         Int             @default(256)
   referenceSolutionJson String?
+  // JSON string arrays. categoryTags = algorithmic (dp, graphs); companyTags =
+  // archetype/company (amazon, stripe-style); hints = ordered hint strings.
+  categoryTagsJson      String?
+  companyTagsJson       String?
+  hintsJson             String?
   status                String          @default("draft")
   createdAt             DateTime        @default(now())
   updatedAt             DateTime        @updatedAt

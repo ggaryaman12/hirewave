@@ -4,14 +4,21 @@ import { compareOutput } from '@/lib/judge/compare';
 import { gradeSubmission } from '@/lib/judge/grade';
 import { getJudgeProvider } from '@/lib/judge/provider';
 import { parseSignature, wrapSource } from '@/lib/judge/harness';
+import { parseDesignSpec, wrapDesignSource } from '@/lib/judge/harness/design';
 import type { ComparisonPolicy, JudgeRunFn, Verdict } from '@/lib/judge/types';
 
-// Function-mode problems (signatureJson set) wrap the candidate's function with a
-// hidden per-language driver before judging. stdin/stdout problems pass through.
-function effectiveSource(signatureJson: string | null, language: string, source: string) {
-  const signature = parseSignature(signatureJson);
-  if (!signature) return source;
-  return wrapSource(language, signature, source);
+type WrapInput = { signatureJson: string | null; designSpecJson: string | null };
+
+// Wraps the candidate's code with the right hidden driver before judging:
+//   design  (designSpecJson) -> operations driver (class + method calls)
+//   function(signatureJson)  -> typed function driver
+//   stdin/stdout             -> passes through unchanged
+function effectiveSource(problem: WrapInput, language: string, source: string) {
+  const design = parseDesignSpec(problem.designSpecJson);
+  if (design) return wrapDesignSource(language, design, source);
+  const signature = parseSignature(problem.signatureJson);
+  if (signature) return wrapSource(language, signature, source);
+  return source;
 }
 
 function resolveRun(run?: JudgeRunFn): JudgeRunFn {
@@ -42,7 +49,7 @@ export async function submitSolution(input: {
   const grade = await gradeSubmission(
     {
       language: input.language,
-      source: effectiveSource(problem.signatureJson, input.language, input.source),
+      source: effectiveSource(problem, input.language, input.source),
       timeLimitMs: problem.timeLimitMs,
       memoryLimitMb: problem.memoryLimitMb,
       comparison: problem.comparison as ComparisonPolicy,
@@ -97,7 +104,7 @@ export async function runSamples(input: {
   const run = resolveRun(input.run);
   const samples = problem.testCases.filter((testCase) => testCase.isSample);
   const comparison = problem.comparison as ComparisonPolicy;
-  const wrapped = effectiveSource(problem.signatureJson, input.language, input.source);
+  const wrapped = effectiveSource(problem, input.language, input.source);
   const results = [];
 
   for (let index = 0; index < samples.length; index += 1) {

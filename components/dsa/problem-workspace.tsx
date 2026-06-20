@@ -3,7 +3,7 @@
 import { Fragment, useState } from 'react';
 import dynamic from 'next/dynamic';
 import Link from 'next/link';
-import { ArrowLeft, Clock, Cpu, Play, RotateCcw, Send } from 'lucide-react';
+import { ArrowLeft, Building2, Clock, Cpu, Lightbulb, Play, RotateCcw, Send, Tag } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 // Monaco is browser-only — load it client-side without SSR.
@@ -25,9 +25,13 @@ export type ProblemPayload = {
   outputFormat: string | null;
   timeLimitMs: number;
   memoryLimitMb: number;
+  kind: string;
   functionMode: boolean;
   functionName: string | null;
   boilerplates: Record<Language, string>;
+  categoryTags: string[];
+  companyTags: string[];
+  hints: string[];
   samples: ProblemSample[];
 };
 
@@ -122,6 +126,7 @@ export function ProblemWorkspace({ slug, problem }: { slug: string; problem: Pro
   const [runResults, setRunResults] = useState<RunResponse | null>(null);
   const [submitResult, setSubmitResult] = useState<SubmitResponse | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [hintsShown, setHintsShown] = useState(0);
 
   const source = sources[language];
   const setSource = (value: string) => setSources((prev) => ({ ...prev, [language]: value }));
@@ -200,6 +205,12 @@ export function ProblemWorkspace({ slug, problem }: { slug: string; problem: Pro
                 <Cpu className="h-3 w-3" />
                 {problem.memoryLimitMb} MB
               </span>
+              {problem.companyTags.map((company) => (
+                <span key={company} className="inline-flex items-center gap-1 rounded-full bg-[#f15a29]/15 px-2 py-0.5 text-[10px] font-black uppercase tracking-[0.1em] text-[#f7a07f]">
+                  <Building2 className="h-3 w-3" />
+                  {company}
+                </span>
+              ))}
             </p>
           </div>
         </div>
@@ -231,6 +242,42 @@ export function ProblemWorkspace({ slug, problem }: { slug: string; problem: Pro
             <div className="mt-6">
               <h3 className="text-xs font-bold uppercase tracking-[0.16em] text-white/40">Constraints</h3>
               <Markdown content={problem.constraintsMd} className="mt-2" />
+            </div>
+          )}
+
+          {problem.hints.length > 0 && (
+            <div className="mt-6">
+              <h3 className="flex items-center gap-1.5 text-xs font-bold uppercase tracking-[0.16em] text-white/40">
+                <Lightbulb className="h-3.5 w-3.5" />
+                Hints
+              </h3>
+              <div className="mt-2 grid gap-2">
+                {problem.hints.slice(0, hintsShown).map((hint, index) => (
+                  <div key={index} className="rounded-lg border border-amber-500/20 bg-amber-500/[0.06] p-3 text-sm text-amber-100/90">
+                    <span className="font-black text-amber-200/70">Hint {index + 1}.</span> {hint}
+                  </div>
+                ))}
+                {hintsShown < problem.hints.length && (
+                  <button
+                    type="button"
+                    onClick={() => setHintsShown((n) => n + 1)}
+                    className="w-fit rounded-md border border-white/10 px-3 py-1.5 text-xs font-bold text-white/60 hover:bg-white/10 hover:text-white"
+                  >
+                    Reveal hint {hintsShown + 1} of {problem.hints.length}
+                  </button>
+                )}
+              </div>
+            </div>
+          )}
+
+          {problem.categoryTags.length > 0 && (
+            <div className="mt-6 flex flex-wrap items-center gap-2">
+              <Tag className="h-3.5 w-3.5 text-white/35" />
+              {problem.categoryTags.map((tagName) => (
+                <span key={tagName} className="rounded-full bg-white/[0.06] px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-[0.1em] text-white/55">
+                  {tagName}
+                </span>
+              ))}
             </div>
           )}
 
@@ -307,10 +354,16 @@ export function ProblemWorkspace({ slug, problem }: { slug: string; problem: Pro
             </div>
           </div>
 
-          {problem.functionMode && problem.functionName && (
+          {problem.functionMode && (
             <p className="border-b border-white/10 bg-white/[0.02] px-4 py-1.5 text-[11px] text-white/45">
-              Implement <code className="rounded bg-black/40 px-1 font-mono text-white/75">{problem.functionName}</code>. Input
-              parsing and output printing are handled for you.
+              {problem.kind === 'design' ? (
+                <>Implement the class methods. The driver runs the operation sequence for you.</>
+              ) : (
+                <>
+                  Implement <code className="rounded bg-black/40 px-1 font-mono text-white/75">{problem.functionName}</code>. Input
+                  parsing and output printing are handled for you.
+                </>
+              )}
             </p>
           )}
 
