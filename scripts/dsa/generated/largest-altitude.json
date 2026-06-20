@@ -1,0 +1,170 @@
+{
+  "slug": "largest-altitude",
+  "title": "Largest Altitude",
+  "track": "real-world",
+  "topic": "patterns",
+  "difficulty": "easy",
+  "statementMd": "A road trip starts at altitude `0`. `gain[i]` is the net altitude change between point `i` and point `i+1`. Return the highest altitude reached at any point on the trip (including the start).",
+  "constraintsMd": "- `1 <= gain.length <= 10^5`\n- `-10^4 <= gain[i] <= 10^4`",
+  "inputFormat": null,
+  "outputFormat": null,
+  "comparison": "whitespace",
+  "floatEpsilon": null,
+  "timeLimitMs": 2000,
+  "memoryLimitMb": 256,
+  "categoryTags": [
+    "prefix-sum",
+    "arrays"
+  ],
+  "companyTags": [
+    "amazon-style"
+  ],
+  "hints": [
+    "The altitude at each point is the running sum of the gains so far.",
+    "Track a running total starting at 0 and keep the maximum value it reaches."
+  ],
+  "kind": "function",
+  "functionName": "largestAltitude",
+  "signatureJson": "{\"functionName\":\"largestAltitude\",\"params\":[{\"name\":\"gain\",\"type\":\"int[]\"}],\"returnType\":\"int\"}",
+  "designSpecJson": null,
+  "testCases": [
+    {
+      "input": "-5 1 5 0 -7\n",
+      "expected": "1",
+      "isSample": true,
+      "sortOrder": 0
+    },
+    {
+      "input": "-4 -3 -2 -1 4 3 2\n",
+      "expected": "0",
+      "isSample": true,
+      "sortOrder": 1
+    },
+    {
+      "input": "10\n",
+      "expected": "10",
+      "isSample": true,
+      "sortOrder": 2
+    },
+    {
+      "input": "4 7\n",
+      "expected": "11",
+      "isSample": false,
+      "sortOrder": 3
+    },
+    {
+      "input": "-2 -9 6 -7 1 3\n",
+      "expected": "0",
+      "isSample": false,
+      "sortOrder": 4
+    },
+    {
+      "input": "-5 -1 7\n",
+      "expected": "1",
+      "isSample": false,
+      "sortOrder": 5
+    },
+    {
+      "input": "-5 -5 3 -7\n",
+      "expected": "0",
+      "isSample": false,
+      "sortOrder": 6
+    },
+    {
+      "input": "-4 3 6 4 -1 4 8 0\n",
+      "expected": "20",
+      "isSample": false,
+      "sortOrder": 7
+    },
+    {
+      "input": "8 -7\n",
+      "expected": "8",
+      "isSample": false,
+      "sortOrder": 8
+    },
+    {
+      "input": "-2 7 5 7 5\n",
+      "expected": "22",
+      "isSample": false,
+      "sortOrder": 9
+    },
+    {
+      "input": "-8 -6 8 3 -9 -7 8\n",
+      "expected": "0",
+      "isSample": false,
+      "sortOrder": 10
+    },
+    {
+      "input": "-9 -1 9 -2 -1\n",
+      "expected": "0",
+      "isSample": false,
+      "sortOrder": 11
+    },
+    {
+      "input": "-9 3 -4 2 7\n",
+      "expected": "0",
+      "isSample": false,
+      "sortOrder": 12
+    },
+    {
+      "input": "0 7 2 8 -5 0 -8 6\n",
+      "expected": "17",
+      "isSample": false,
+      "sortOrder": 13
+    },
+    {
+      "input": "-4 8 -9 2 -8 5 -4 5 3\n",
+      "expected": "4",
+      "isSample": false,
+      "sortOrder": 14
+    },
+    {
+      "input": "3 0 0 -9 -6 6 -5 -9\n",
+      "expected": "3",
+      "isSample": false,
+      "sortOrder": 15
+    },
+    {
+      "input": "8 -7 -1\n",
+      "expected": "8",
+      "isSample": false,
+      "sortOrder": 16
+    },
+    {
+      "input": "8 6 8\n",
+      "expected": "22",
+      "isSample": false,
+      "sortOrder": 17
+    },
+    {
+      "input": "-2 -4 0 -6 8 7 4 3 7 0 0 5\n",
+      "expected": "22",
+      "isSample": false,
+      "sortOrder": 18
+    },
+    {
+      "input": "0 -7 -3 1 2 4 2 -2 6 2 -7 -3\n",
+      "expected": "5",
+      "isSample": false,
+      "sortOrder": 19
+    },
+    {
+      "input": "3 8 5 -6 6 -3 8 -6 -2 3 -8\n",
+      "expected": "21",
+      "isSample": false,
+      "sortOrder": 20
+    },
+    {
+      "input": "-6 -1 8 8\n",
+      "expected": "9",
+      "isSample": false,
+      "sortOrder": 21
+    },
+    {
+      "input": "-8 0 -4 7 5 -8 -9\n",
+      "expected": "0",
+      "isSample": false,
+      "sortOrder": 22
+    }
+  ]
+}

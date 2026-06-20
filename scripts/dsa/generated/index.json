@@ -1,82 +1,128 @@
 [
   {
     "slug": "has-pair-with-sum",
+    "kind": "function",
     "sampleCount": 3,
     "hiddenCount": 25
   },
   {
     "slug": "maximum-subarray-sum",
+    "kind": "function",
     "sampleCount": 3,
     "hiddenCount": 25
   },
   {
     "slug": "second-largest",
+    "kind": "function",
     "sampleCount": 3,
     "hiddenCount": 20
   },
   {
     "slug": "reverse-array",
+    "kind": "function",
     "sampleCount": 3,
     "hiddenCount": 18
   },
   {
     "slug": "move-zeroes",
+    "kind": "function",
     "sampleCount": 3,
     "hiddenCount": 18
   },
   {
     "slug": "count-distinct",
+    "kind": "function",
     "sampleCount": 3,
     "hiddenCount": 18
   },
   {
     "slug": "majority-element",
+    "kind": "function",
     "sampleCount": 3,
     "hiddenCount": 20
   },
   {
     "slug": "binary-search-index",
+    "kind": "function",
     "sampleCount": 3,
     "hiddenCount": 22
   },
   {
     "slug": "is-palindrome",
+    "kind": "function",
     "sampleCount": 3,
     "hiddenCount": 20
   },
   {
     "slug": "count-vowels",
+    "kind": "function",
     "sampleCount": 3,
     "hiddenCount": 18
   },
   {
     "slug": "valid-anagram",
+    "kind": "function",
     "sampleCount": 3,
     "hiddenCount": 20
   },
   {
     "slug": "gcd-two-numbers",
+    "kind": "function",
     "sampleCount": 3,
     "hiddenCount": 18
   },
   {
     "slug": "nth-fibonacci",
+    "kind": "function",
     "sampleCount": 3,
     "hiddenCount": 20
   },
   {
     "slug": "array-average",
+    "kind": "function",
     "sampleCount": 3,
     "hiddenCount": 18
   },
   {
     "slug": "transpose-matrix",
+    "kind": "function",
     "sampleCount": 3,
     "hiddenCount": 18
   },
   {
     "slug": "matrix-row-sums",
+    "kind": "function",
     "sampleCount": 3,
     "hiddenCount": 18
+  },
+  {
+    "slug": "largest-altitude",
+    "kind": "function",
+    "sampleCount": 3,
+    "hiddenCount": 20
+  },
+  {
+    "slug": "unique-charges",
+    "kind": "function",
+    "sampleCount": 3,
+    "hiddenCount": 18
+  },
+  {
+    "slug": "design-bank-system",
+    "kind": "design",
+    "sampleCount": 1,
+    "hiddenCount": 25
+  },
+  {
+    "slug": "design-lru-cache",
+    "kind": "design",
+    "sampleCount": 1,
+    "hiddenCount": 25
+  },
+  {
+    "slug": "design-rate-limiter",
+    "kind": "design",
+    "sampleCount": 1,
+    "hiddenCount": 25
   }
 ]

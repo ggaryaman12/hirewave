@@ -31,5 +31,23 @@
         "sortOrder": 4
       }
     ]
+  },
+  {
+    "slug": "real-world",
+    "title": "Real-World / Interview",
+    "source": "Original Hirewave interview-pattern bank",
+    "sortOrder": 1,
+    "topics": [
+      {
+        "key": "design",
+        "title": "Design (OOD)",
+        "sortOrder": 0
+      },
+      {
+        "key": "patterns",
+        "title": "Company Patterns",
+        "sortOrder": 1
+      }
+    ]
   }
 ]

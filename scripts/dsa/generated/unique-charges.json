@@ -1,0 +1,158 @@
+{
+  "slug": "unique-charges",
+  "title": "Idempotent Charge Count",
+  "track": "real-world",
+  "topic": "patterns",
+  "difficulty": "easy",
+  "statementMd": "A payments API receives charge requests, each identified by an idempotency key. Retries resend the same key, and a charge must be counted only once. Given the list of keys `requests` in arrival order, return the number of distinct charges actually applied.",
+  "constraintsMd": "- `1 <= requests.length <= 10^5`\n- Each key is a lowercase alphanumeric string.",
+  "inputFormat": null,
+  "outputFormat": null,
+  "comparison": "whitespace",
+  "floatEpsilon": null,
+  "timeLimitMs": 2000,
+  "memoryLimitMb": 256,
+  "categoryTags": [
+    "hashing",
+    "strings"
+  ],
+  "companyTags": [
+    "stripe-style"
+  ],
+  "hints": [
+    "A retried payment sends the same idempotency key more than once.",
+    "A set of seen keys gives you the count of distinct charges in one pass."
+  ],
+  "kind": "function",
+  "functionName": "uniqueCharges",
+  "signatureJson": "{\"functionName\":\"uniqueCharges\",\"params\":[{\"name\":\"requests\",\"type\":\"string[]\"}],\"returnType\":\"int\"}",
+  "designSpecJson": null,
+  "testCases": [
+    {
+      "input": "ch_a ch_b ch_a\n",
+      "expected": "2",
+      "isSample": true,
+      "sortOrder": 0
+    },
+    {
+      "input": "ch_x\n",
+      "expected": "1",
+      "isSample": true,
+      "sortOrder": 1
+    },
+    {
+      "input": "a b c a b\n",
+      "expected": "3",
+      "isSample": true,
+      "sortOrder": 2
+    },
+    {
+      "input": "ch_e ch_a\n",
+      "expected": "2",
+      "isSample": false,
+      "sortOrder": 3
+    },
+    {
+      "input": "ch_d ch_d ch_b ch_c\n",
+      "expected": "3",
+      "isSample": false,
+      "sortOrder": 4
+    },
+    {
+      "input": "ch_c ch_b ch_b ch_e ch_e ch_c ch_a ch_d ch_e ch_c ch_b\n",
+      "expected": "5",
+      "isSample": false,
+      "sortOrder": 5
+    },
+    {
+      "input": "ch_e ch_d ch_e ch_a ch_e ch_e ch_a ch_c ch_c ch_d ch_d\n",
+      "expected": "4",
+      "isSample": false,
+      "sortOrder": 6
+    },
+    {
+      "input": "ch_c\n",
+      "expected": "1",
+      "isSample": false,
+      "sortOrder": 7
+    },
+    {
+      "input": "ch_b ch_b ch_e\n",
+      "expected": "2",
+      "isSample": false,
+      "sortOrder": 8
+    },
+    {
+      "input": "ch_d ch_b ch_b ch_d ch_b\n",
+      "expected": "2",
+      "isSample": false,
+      "sortOrder": 9
+    },
+    {
+      "input": "ch_c ch_b ch_a ch_d ch_a ch_b\n",
+      "expected": "4",
+      "isSample": false,
+      "sortOrder": 10
+    },
+    {
+      "input": "ch_a ch_c ch_d ch_c ch_a ch_c ch_c ch_a ch_c\n",
+      "expected": "3",
+      "isSample": false,
+      "sortOrder": 11
+    },
+    {
+      "input": "ch_d ch_d ch_c ch_c ch_b ch_e\n",
+      "expected": "4",
+      "isSample": false,
+      "sortOrder": 12
+    },
+    {
+      "input": "ch_b ch_a ch_a ch_e ch_e ch_b\n",
+      "expected": "3",
+      "isSample": false,
+      "sortOrder": 13
+    },
+    {
+      "input": "ch_b ch_e ch_e ch_c ch_b ch_b ch_a ch_b ch_e ch_b ch_e ch_e\n",
+      "expected": "4",
+      "isSample": false,
+      "sortOrder": 14
+    },
+    {
+      "input": "ch_c ch_b ch_a ch_b ch_c ch_c ch_e ch_a ch_d ch_d ch_e ch_c\n",
+      "expected": "5",
+      "isSample": false,
+      "sortOrder": 15
+    },
+    {
+      "input": "ch_d\n",
+      "expected": "1",
+      "isSample": false,
+      "sortOrder": 16
+    },
+    {
+      "input": "ch_e ch_d ch_d ch_a ch_d ch_d ch_e ch_d ch_c ch_a\n",
+      "expected": "4",
+      "isSample": false,
+      "sortOrder": 17
+    },
+    {
+      "input": "ch_b ch_b ch_a ch_d ch_d\n",
+      "expected": "3",
+      "isSample": false,
+      "sortOrder": 18
+    },
+    {
+      "input": "ch_e ch_b ch_d ch_d ch_d ch_b ch_c ch_e ch_e ch_b ch_e ch_d\n",
+      "expected": "4",
+      "isSample": false,
+      "sortOrder": 19
+    },
+    {
+      "input": "ch_c ch_a ch_c ch_c\n",
+      "expected": "2",
+      "isSample": false,
+      "sortOrder": 20
+    }
+  ]
+}

@@ -1,0 +1,190 @@
+{
+  "slug": "design-lru-cache",
+  "title": "Design an LRU Cache",
+  "track": "real-world",
+  "topic": "design",
+  "difficulty": "medium",
+  "statementMd": "Design a cache with a fixed `capacity` that evicts the least recently used entry.\n\n- `get(key)` — return the value for `key`, or `-1` if absent. A successful get counts as a use.\n- `put(key, value)` — insert or update. If the cache is over capacity, evict the least recently used key. A put counts as a use.",
+  "constraintsMd": "- `1 <= capacity <= 10^4`\n- `1 <= number of operations <= 10^4`",
+  "inputFormat": null,
+  "outputFormat": null,
+  "comparison": "whitespace",
+  "floatEpsilon": null,
+  "timeLimitMs": 2000,
+  "memoryLimitMb": 256,
+  "categoryTags": [
+    "design",
+    "hashmap",
+    "linked-list"
+  ],
+  "companyTags": [
+    "amazon-style"
+  ],
+  "hints": [
+    "You need O(1) lookup and O(1) recency updates.",
+    "Insertion-ordered maps make \"least recently used\" the first key.",
+    "Both get and put count as a use — move the key to most-recently-used."
+  ],
+  "kind": "design",
+  "functionName": null,
+  "signatureJson": null,
+  "designSpecJson": "{\"className\":\"LRUCache\",\"constructorParams\":[{\"name\":\"capacity\",\"type\":\"int\"}],\"methods\":[{\"name\":\"get\",\"params\":[{\"name\":\"key\",\"type\":\"int\"}],\"returnType\":\"int\"},{\"name\":\"put\",\"params\":[{\"name\":\"key\",\"type\":\"int\"},{\"name\":\"value\",\"type\":\"int\"}],\"returnType\":\"void\"}]}",
+  "testCases": [
+    {
+      "input": "2\n6\nput 1 10\nput 2 20\nget 1\nput 3 30\nget 2\nget 3\n",
+      "expected": "10\n-1\n30",
+      "isSample": true,
+      "sortOrder": 0
+    },
+    {
+      "input": "1\n8\nput 2 49\nput 1 43\nput 4 44\nget 1\nget 4\nput 3 31\nget 3\nget 3\n",
+      "expected": "-1\n44\n31\n31",
+      "isSample": false,
+      "sortOrder": 1
+    },
+    {
+      "input": "1\n14\nput 3 34\nput 1 25\nput 2 40\nget 3\nget 1\nget 3\nput 3 14\nget 3\nget 2\nget 2\nput 4 18\nput 2 19\nget 1\nput 3 77\n",
+      "expected": "-1\n-1\n-1\n14\n-1\n-1\n-1",
+      "isSample": false,
+      "sortOrder": 2
+    },
+    {
+      "input": "2\n10\nget 3\nget 1\nput 1 32\nput 2 40\nput 2 69\nput 1 85\nget 2\nput 3 71\nput 1 29\nput 1 29\n",
+      "expected": "-1\n-1\n69",
+      "isSample": false,
+      "sortOrder": 3
+    },
+    {
+      "input": "3\n8\nput 3 90\nput 2 47\nget 4\nget 3\nget 2\nput 2 54\nget 1\nput 4 42\n",
+      "expected": "-1\n90\n47\n-1",
+      "isSample": false,
+      "sortOrder": 4
+    },
+    {
+      "input": "1\n13\nget 2\nput 2 87\nput 4 59\nput 1 41\nget 3\nget 4\nput 4 73\nget 2\nput 3 96\nput 1 75\nget 2\nget 2\nget 2\n",
+      "expected": "-1\n-1\n-1\n-1\n-1\n-1\n-1",
+      "isSample": false,
+      "sortOrder": 5
+    },
+    {
+      "input": "2\n8\nput 4 54\nput 3 87\nget 1\nput 4 43\nget 2\nget 4\nput 4 77\nget 3\n",
+      "expected": "-1\n-1\n43\n87",
+      "isSample": false,
+      "sortOrder": 6
+    },
+    {
+      "input": "1\n7\nput 2 12\nput 1 49\nget 2\nget 3\nget 4\nput 2 98\nget 3\n",
+      "expected": "-1\n-1\n-1\n-1",
+      "isSample": false,
+      "sortOrder": 7
+    },
+    {
+      "input": "2\n13\nput 1 68\nget 1\nget 1\nget 1\nput 2 95\nget 4\nput 3 14\nget 1\nget 4\nget 3\nput 2 92\nget 3\nput 1 80\n",
+      "expected": "68\n68\n68\n-1\n-1\n-1\n14\n14",
+      "isSample": false,
+      "sortOrder": 8
+    },
+    {
+      "input": "1\n9\nput 2 31\nput 4 91\nput 2 92\nget 4\nput 3 32\nput 4 79\nput 2 94\nget 2\nput 1 15\n",
+      "expected": "-1\n94",
+      "isSample": false,
+      "sortOrder": 9
+    },
+    {
+      "input": "3\n10\nput 3 25\nput 1 33\nget 2\nput 1 71\nput 3 69\nput 3 51\nget 3\nput 4 72\nput 1 16\nget 3\n",
+      "expected": "-1\n51\n51",
+      "isSample": false,
+      "sortOrder": 10
+    },
+    {
+      "input": "3\n7\nget 2\nput 3 50\nget 1\nput 4 58\nput 4 10\nget 4\nput 3 51\n",
+      "expected": "-1\n-1\n10",
+      "isSample": false,
+      "sortOrder": 11
+    },
+    {
+      "input": "1\n13\nput 2 36\nput 2 32\nput 1 84\nget 2\nget 2\nget 3\nput 4 91\nput 1 48\nput 1 45\nget 4\nput 3 18\nget 4\nget 1\n",
+      "expected": "-1\n-1\n-1\n-1\n-1\n-1",
+      "isSample": false,
+      "sortOrder": 12
+    },
+    {
+      "input": "3\n7\nput 3 30\nput 1 21\nget 4\nput 2 66\nput 2 54\nput 4 15\nput 3 69\n",
+      "expected": "-1",
+      "isSample": false,
+      "sortOrder": 13
+    },
+    {
+      "input": "3\n10\nput 4 29\nget 3\nput 4 21\nget 1\nput 4 83\nput 3 25\nget 4\nput 1 61\nget 4\nput 1 63\n",
+      "expected": "-1\n-1\n83\n83",
+      "isSample": false,
+      "sortOrder": 14
+    },
+    {
+      "input": "3\n9\nput 3 74\nput 2 47\nget 4\nget 3\nget 3\nget 3\nput 3 12\nget 3\nget 1\n",
+      "expected": "-1\n74\n74\n74\n12\n-1",
+      "isSample": false,
+      "sortOrder": 15
+    },
+    {
+      "input": "2\n5\nget 3\nput 2 55\nput 2 68\nput 2 81\nget 4\n",
+      "expected": "-1\n-1",
+      "isSample": false,
+      "sortOrder": 16
+    },
+    {
+      "input": "2\n9\nget 2\nput 1 92\nput 2 68\nput 4 60\nget 2\nput 4 86\nput 3 71\nput 2 39\nget 1\n",
+      "expected": "-1\n68\n-1",
+      "isSample": false,
+      "sortOrder": 17
+    },
+    {
+      "input": "2\n9\nput 4 15\nput 2 49\nget 4\nput 1 25\nget 3\nget 3\nput 3 50\nget 2\nget 4\n",
+      "expected": "15\n-1\n-1\n-1\n-1",
+      "isSample": false,
+      "sortOrder": 18
+    },
+    {
+      "input": "3\n7\nget 2\nput 4 40\nget 1\nput 3 82\nget 1\nput 1 38\nput 1 67\n",
+      "expected": "-1\n-1\n-1",
+      "isSample": false,
+      "sortOrder": 19
+    },
+    {
+      "input": "3\n9\nput 3 82\nget 1\nput 2 81\nget 2\nget 1\nput 2 56\nget 1\nput 1 85\nput 3 35\n",
+      "expected": "-1\n81\n-1\n-1",
+      "isSample": false,
+      "sortOrder": 20
+    },
+    {
+      "input": "2\n9\nput 4 65\nput 1 72\nget 4\nput 3 44\nput 4 59\nget 2\nget 2\nget 3\nput 4 63\n",
+      "expected": "65\n-1\n-1\n44",
+      "isSample": false,
+      "sortOrder": 21
+    },
+    {
+      "input": "3\n10\nput 2 30\nget 3\nput 1 92\nget 3\nget 2\nput 3 55\nget 3\nget 2\nget 2\nput 2 89\n",
+      "expected": "-1\n-1\n30\n55\n30\n30",
+      "isSample": false,
+      "sortOrder": 22
+    },
+    {
+      "input": "1\n10\nget 2\nput 3 23\nget 1\nput 1 16\nput 1 20\nput 4 99\nput 4 50\nget 2\nput 2 92\nget 1\n",
+      "expected": "-1\n-1\n-1\n-1",
+      "isSample": false,
+      "sortOrder": 23
+    },
+    {
+      "input": "2\n9\nput 4 36\nput 3 97\nget 4\nget 4\nput 4 13\nget 1\nget 4\nput 2 73\nget 3\n",
+      "expected": "36\n36\n-1\n13\n-1",
+      "isSample": false,
+      "sortOrder": 24
+    },
+    {
+      "input": "1\n5\nget 4\nget 4\nget 2\nget 3\nput 4 66\n",
+      "expected": "-1\n-1\n-1\n-1",
+      "isSample": false,
+      "sortOrder": 25
+    }
+  ]
+}
