@@ -108,6 +108,12 @@
     "hiddenCount": 18
   },
   {
+    "slug": "1060-a-phone-numbers",
+    "kind": "function",
+    "sampleCount": 3,
+    "hiddenCount": 22
+  },
+  {
     "slug": "design-bank-system",
     "kind": "design",
     "sampleCount": 1,

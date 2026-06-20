@@ -1,0 +1,182 @@
+{
+  "slug": "1060-a-phone-numbers",
+  "title": "Phone Numbers",
+  "track": "real-world",
+  "topic": "patterns",
+  "difficulty": "easy",
+  "statementMd": "A phone number is a string of length 11 matching the pattern `8xxxxxxxxxx` (a leading `8` followed by ten digits).\n\nYou have a set of digit cards given as the string `digits` (each character is one card). Using each card in at most one phone number, return the maximum number of phone numbers you can form. You do not have to use every card, and the phone numbers need not be distinct.",
+  "constraintsMd": "- `1 <= digits.length <= 100`\n- Each character of `digits` is a decimal digit `0`-`9`.",
+  "inputFormat": null,
+  "outputFormat": null,
+  "comparison": "whitespace",
+  "floatEpsilon": null,
+  "timeLimitMs": 2000,
+  "memoryLimitMb": 256,
+  "attribution": "Adapted to function form from the DeepMind code_contests dataset (CC BY 4.0). Original problem: Codeforces.",
+  "categoryTags": [
+    "greedy",
+    "strings"
+  ],
+  "companyTags": [],
+  "hints": [
+    "A phone number needs exactly 11 cards and must start with the digit 8.",
+    "So each phone number costs one 8 plus ten other cards.",
+    "The answer is limited by both the count of 8s and how many groups of 11 cards you have."
+  ],
+  "kind": "function",
+  "functionName": "maxPhoneNumbers",
+  "signatureJson": "{\"functionName\":\"maxPhoneNumbers\",\"params\":[{\"name\":\"digits\",\"type\":\"string\"}],\"returnType\":\"int\"}",
+  "designSpecJson": null,
+  "testCases": [
+    {
+      "input": "0011223344556677889988\n",
+      "expected": "2",
+      "isSample": true,
+      "sortOrder": 0
+    },
+    {
+      "input": "00000000008\n",
+      "expected": "1",
+      "isSample": true,
+      "sortOrder": 1
+    },
+    {
+      "input": "31415926535\n",
+      "expected": "0",
+      "isSample": true,
+      "sortOrder": 2
+    },
+    {
+      "input": "09175296299080908747\n",
+      "expected": "1",
+      "isSample": false,
+      "sortOrder": 3
+    },
+    {
+      "input": "086604173122995500349\n",
+      "expected": "1",
+      "isSample": false,
+      "sortOrder": 4
+    },
+    {
+      "input": "9877149901092675\n",
+      "expected": "1",
+      "isSample": false,
+      "sortOrder": 5
+    },
+    {
+      "input": "66637817514684\n",
+      "expected": "1",
+      "isSample": false,
+      "sortOrder": 6
+    },
+    {
+      "input": "26855632488364119136488493921\n",
+      "expected": "2",
+      "isSample": false,
+      "sortOrder": 7
+    },
+    {
+      "input": "5323159619\n",
+      "expected": "0",
+      "isSample": false,
+      "sortOrder": 8
+    },
+    {
+      "input": "028879360599140440332\n",
+      "expected": "1",
+      "isSample": false,
+      "sortOrder": 9
+    },
+    {
+      "input": "547906495783289\n",
+      "expected": "1",
+      "isSample": false,
+      "sortOrder": 10
+    },
+    {
+      "input": "42707245\n",
+      "expected": "0",
+      "isSample": false,
+      "sortOrder": 11
+    },
+    {
+      "input": "33278125949177453273885\n",
+      "expected": "2",
+      "isSample": false,
+      "sortOrder": 12
+    },
+    {
+      "input": "11668106936114\n",
+      "expected": "1",
+      "isSample": false,
+      "sortOrder": 13
+    },
+    {
+      "input": "3\n",
+      "expected": "0",
+      "isSample": false,
+      "sortOrder": 14
+    },
+    {
+      "input": "74727552736349896265\n",
+      "expected": "1",
+      "isSample": false,
+      "sortOrder": 15
+    },
+    {
+      "input": "91222006386328281462886\n",
+      "expected": "2",
+      "isSample": false,
+      "sortOrder": 16
+    },
+    {
+      "input": "4228\n",
+      "expected": "0",
+      "isSample": false,
+      "sortOrder": 17
+    },
+    {
+      "input": "4721597393574\n",
+      "expected": "0",
+      "isSample": false,
+      "sortOrder": 18
+    },
+    {
+      "input": "831324512\n",
+      "expected": "0",
+      "isSample": false,
+      "sortOrder": 19
+    },
+    {
+      "input": "302015295341081248797361682525\n",
+      "expected": "2",
+      "isSample": false,
+      "sortOrder": 20
+    },
+    {
+      "input": "04071724036087921493897\n",
+      "expected": "2",
+      "isSample": false,
+      "sortOrder": 21
+    },
+    {
+      "input": "427451180617751197065229\n",
+      "expected": "1",
+      "isSample": false,
+      "sortOrder": 22
+    },
+    {
+      "input": "369393565056581559101006061\n",
+      "expected": "1",
+      "isSample": false,
+      "sortOrder": 23
+    },
+    {
+      "input": "321086545104081666604251\n",
+      "expected": "2",
+      "isSample": false,
+      "sortOrder": 24
+    }
+  ]
+}

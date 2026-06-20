@@ -12,6 +12,7 @@
   "floatEpsilon": null,
   "timeLimitMs": 2000,
   "memoryLimitMb": 256,
+  "attribution": null,
   "categoryTags": [],
   "companyTags": [],
   "hints": [],
