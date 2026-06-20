@@ -27,14 +27,17 @@ test.describe('Function harness (local multi-language provider)', () => {
   }
   return [];
 }`,
-    cpp: `vector<int> twoSum(vector<int> nums, int target) {
-    unordered_map<int,int> m;
-    for (int i = 0; i < (int)nums.size(); i++) {
-        if (m.count(target - nums[i])) return {m[target - nums[i]], i};
-        m[nums[i]] = i;
+    cpp: `class Solution {
+public:
+    vector<int> twoSum(vector<int>& nums, int target) {
+        unordered_map<int,int> m;
+        for (int i = 0; i < (int)nums.size(); i++) {
+            if (m.count(target - nums[i])) return {m[target - nums[i]], i};
+            m[nums[i]] = i;
+        }
+        return {};
     }
-    return {};
-}`,
+};`,
     java: `class Solution {
     public int[] twoSum(int[] nums, int target) {
         Map<Integer,Integer> m = new HashMap<>();

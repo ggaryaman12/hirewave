@@ -87,7 +87,11 @@ for (const [slug, sols] of Object.entries(SOLUTIONS)) {
       const problem = JSON.parse(readFileSync(join(GEN_DIR, `${slug}.json`), 'utf8')) as GenProblem;
       const sig = parseSignature(problem.signatureJson);
       expect(sig).not.toBeNull();
-      const source = wrapSource(language, sig!, sols[language]);
+      // cpp solutions are written as method bodies; wrap them in class Solution
+      // to match the LeetCode-style harness (java entries already are).
+      const raw = sols[language];
+      const userCode = language === 'cpp' ? `class Solution {\npublic:\n${raw}\n};` : raw;
+      const source = wrapSource(language, sig!, userCode);
 
       for (const tc of problem.testCases) {
         const run = await provider.run({

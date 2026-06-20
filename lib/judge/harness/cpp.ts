@@ -26,8 +26,10 @@ function convToken(base: string, tokenExpr: string) {
   return tokenExpr; // string
 }
 
+// LeetCode-style params: scalars by value, arrays/strings by reference.
 function cppParam(type: ParamType, name: string) {
-  return `${CPP_TYPE[type]} ${name}`;
+  const byRef = isArrayType(type) || type === 'string';
+  return byRef ? `${CPP_TYPE[type]}& ${name}` : `${CPP_TYPE[type]} ${name}`;
 }
 
 const CPP_DEFAULT: Record<ParamType, string> = {
@@ -46,7 +48,13 @@ const CPP_DEFAULT: Record<ParamType, string> = {
 
 export function cppBoilerplate(sig: Signature) {
   const params = sig.params.map((param) => cppParam(param.type, param.name)).join(', ');
-  return `${CPP_TYPE[sig.returnType]} ${sig.functionName}(${params}) {\n    // Write your solution here\n    return ${CPP_DEFAULT[sig.returnType]};\n}`;
+  return `class Solution {
+public:
+    ${CPP_TYPE[sig.returnType]} ${sig.functionName}(${params}) {
+        // Write your solution here
+        return ${CPP_DEFAULT[sig.returnType]};
+    }
+};`;
 }
 
 export function cppWrap(sig: Signature, userCode: string) {
@@ -71,7 +79,8 @@ export function cppWrap(sig: Signature, userCode: string) {
     }
   }
 
-  body.push(`auto _res = ${sig.functionName}(${argNames.join(', ')});`);
+  body.push(`Solution _sol;`);
+  body.push(`auto _res = _sol.${sig.functionName}(${argNames.join(', ')});`);
 
   if (is2DType(sig.returnType)) {
     body.push('for (auto &row : _res) { for (size_t i = 0; i < row.size(); i++) { if (i) cout << " "; cout << row[i]; } cout << "\\n"; }');
