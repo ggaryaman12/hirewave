@@ -1,0 +1,145 @@
+{
+  "slug": "move-zeroes",
+  "title": "Move Zeroes",
+  "track": "core-patterns",
+  "topic": "arrays",
+  "difficulty": "easy",
+  "statementMd": "Given an integer array `nums`, return an array where all `0` values are moved to the end while the relative order of the non-zero elements is preserved.",
+  "constraintsMd": "- `0 <= nums.length <= 10^5`\n- `-10^9 <= nums[i] <= 10^9`",
+  "inputFormat": null,
+  "outputFormat": null,
+  "functionName": "moveZeroes",
+  "signatureJson": "{\"functionName\":\"moveZeroes\",\"params\":[{\"name\":\"nums\",\"type\":\"int[]\"}],\"returnType\":\"int[]\"}",
+  "comparison": "whitespace",
+  "floatEpsilon": null,
+  "timeLimitMs": 2000,
+  "memoryLimitMb": 256,
+  "testCases": [
+    {
+      "input": "0 1 0 3 12\n",
+      "expected": "1 3 12 0 0",
+      "isSample": true,
+      "sortOrder": 0
+    },
+    {
+      "input": "0 0 1\n",
+      "expected": "1 0 0",
+      "isSample": true,
+      "sortOrder": 1
+    },
+    {
+      "input": "1 2 3\n",
+      "expected": "1 2 3",
+      "isSample": true,
+      "sortOrder": 2
+    },
+    {
+      "input": "0 0 0 4\n",
+      "expected": "4 0 0 0",
+      "isSample": false,
+      "sortOrder": 3
+    },
+    {
+      "input": "0 0 -1 -4 3\n",
+      "expected": "-1 -4 3 0 0",
+      "isSample": false,
+      "sortOrder": 4
+    },
+    {
+      "input": "4 7 0 0 -3 0 -6 0 0 1\n",
+      "expected": "4 7 -3 -6 1 0 0 0 0 0",
+      "isSample": false,
+      "sortOrder": 5
+    },
+    {
+      "input": "8 0 5 0\n",
+      "expected": "8 5 0 0",
+      "isSample": false,
+      "sortOrder": 6
+    },
+    {
+      "input": "0 0 9 0 4 -1 -2 -8 0 -8\n",
+      "expected": "9 4 -1 -2 -8 -8 0 0 0 0",
+      "isSample": false,
+      "sortOrder": 7
+    },
+    {
+      "input": "0 0 0 -9 -6 0 -1\n",
+      "expected": "-9 -6 -1 0 0 0 0",
+      "isSample": false,
+      "sortOrder": 8
+    },
+    {
+      "input": "-7 -2 7 0\n",
+      "expected": "-7 -2 7 0",
+      "isSample": false,
+      "sortOrder": 9
+    },
+    {
+      "input": "6 0 8 0 2\n",
+      "expected": "6 8 2 0 0",
+      "isSample": false,
+      "sortOrder": 10
+    },
+    {
+      "input": "8 -9 -9\n",
+      "expected": "8 -9 -9",
+      "isSample": false,
+      "sortOrder": 11
+    },
+    {
+      "input": "0 0 7 8\n",
+      "expected": "7 8 0 0",
+      "isSample": false,
+      "sortOrder": 12
+    },
+    {
+      "input": "-2 0 0 -2 0 0 0 0 9\n",
+      "expected": "-2 -2 9 0 0 0 0 0 0",
+      "isSample": false,
+      "sortOrder": 13
+    },
+    {
+      "input": "1\n",
+      "expected": "1",
+      "isSample": false,
+      "sortOrder": 14
+    },
+    {
+      "input": "\n",
+      "expected": "",
+      "isSample": false,
+      "sortOrder": 15
+    },
+    {
+      "input": "-2 5 -8\n",
+      "expected": "-2 5 -8",
+      "isSample": false,
+      "sortOrder": 16
+    },
+    {
+      "input": "0 -1 0 0 6 0\n",
+      "expected": "-1 6 0 0 0 0",
+      "isSample": false,
+      "sortOrder": 17
+    },
+    {
+      "input": "0 7 -4 6\n",
+      "expected": "7 -4 6 0",
+      "isSample": false,
+      "sortOrder": 18
+    },
+    {
+      "input": "3 0 0 0 -5\n",
+      "expected": "3 -5 0 0 0",
+      "isSample": false,
+      "sortOrder": 19
+    },
+    {
+      "input": "0 0 -9\n",
+      "expected": "-9 0 0",
+      "isSample": false,
+      "sortOrder": 20
+    }
+  ]
+}

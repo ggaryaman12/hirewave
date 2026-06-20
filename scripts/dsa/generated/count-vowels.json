@@ -1,0 +1,145 @@
+{
+  "slug": "count-vowels",
+  "title": "Count Vowels",
+  "track": "core-patterns",
+  "topic": "strings",
+  "difficulty": "easy",
+  "statementMd": "Given a string `s` of lowercase English letters, return the number of vowels (`a`, `e`, `i`, `o`, `u`) it contains.",
+  "constraintsMd": "- `1 <= s.length <= 10^5`\n- `s` contains only lowercase English letters.",
+  "inputFormat": null,
+  "outputFormat": null,
+  "functionName": "countVowels",
+  "signatureJson": "{\"functionName\":\"countVowels\",\"params\":[{\"name\":\"s\",\"type\":\"string\"}],\"returnType\":\"int\"}",
+  "comparison": "whitespace",
+  "floatEpsilon": null,
+  "timeLimitMs": 2000,
+  "memoryLimitMb": 256,
+  "testCases": [
+    {
+      "input": "programming\n",
+      "expected": "3",
+      "isSample": true,
+      "sortOrder": 0
+    },
+    {
+      "input": "xyz\n",
+      "expected": "0",
+      "isSample": true,
+      "sortOrder": 1
+    },
+    {
+      "input": "aeiou\n",
+      "expected": "5",
+      "isSample": true,
+      "sortOrder": 2
+    },
+    {
+      "input": "jplddyvstwh\n",
+      "expected": "0",
+      "isSample": false,
+      "sortOrder": 3
+    },
+    {
+      "input": "vgjdqstelr\n",
+      "expected": "1",
+      "isSample": false,
+      "sortOrder": 4
+    },
+    {
+      "input": "nvfjhoiytk\n",
+      "expected": "2",
+      "isSample": false,
+      "sortOrder": 5
+    },
+    {
+      "input": "mjvvvq\n",
+      "expected": "0",
+      "isSample": false,
+      "sortOrder": 6
+    },
+    {
+      "input": "acmfguysvgec\n",
+      "expected": "3",
+      "isSample": false,
+      "sortOrder": 7
+    },
+    {
+      "input": "vikukgcyvdao\n",
+      "expected": "4",
+      "isSample": false,
+      "sortOrder": 8
+    },
+    {
+      "input": "ddruylcb\n",
+      "expected": "1",
+      "isSample": false,
+      "sortOrder": 9
+    },
+    {
+      "input": "wikozo\n",
+      "expected": "3",
+      "isSample": false,
+      "sortOrder": 10
+    },
+    {
+      "input": "m\n",
+      "expected": "0",
+      "isSample": false,
+      "sortOrder": 11
+    },
+    {
+      "input": "tfqfshr\n",
+      "expected": "0",
+      "isSample": false,
+      "sortOrder": 12
+    },
+    {
+      "input": "buncs\n",
+      "expected": "1",
+      "isSample": false,
+      "sortOrder": 13
+    },
+    {
+      "input": "jmsfptzootma\n",
+      "expected": "3",
+      "isSample": false,
+      "sortOrder": 14
+    },
+    {
+      "input": "kjjjgckxeusw\n",
+      "expected": "2",
+      "isSample": false,
+      "sortOrder": 15
+    },
+    {
+      "input": "yw\n",
+      "expected": "0",
+      "isSample": false,
+      "sortOrder": 16
+    },
+    {
+      "input": "wfzrub\n",
+      "expected": "1",
+      "isSample": false,
+      "sortOrder": 17
+    },
+    {
+      "input": "zzjsjs\n",
+      "expected": "0",
+      "isSample": false,
+      "sortOrder": 18
+    },
+    {
+      "input": "rbbtdfnz\n",
+      "expected": "0",
+      "isSample": false,
+      "sortOrder": 19
+    },
+    {
+      "input": "jlfnevkievm\n",
+      "expected": "3",
+      "isSample": false,
+      "sortOrder": 20
+    }
+  ]
+}

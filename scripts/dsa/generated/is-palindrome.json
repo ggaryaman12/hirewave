@@ -1,0 +1,157 @@
+{
+  "slug": "is-palindrome",
+  "title": "Valid Palindrome",
+  "track": "core-patterns",
+  "topic": "strings",
+  "difficulty": "easy",
+  "statementMd": "Given a string `s` consisting only of lowercase English letters, return `true` if `s` reads the same forwards and backwards, otherwise `false`.",
+  "constraintsMd": "- `1 <= s.length <= 10^5`\n- `s` contains only lowercase English letters.",
+  "inputFormat": null,
+  "outputFormat": null,
+  "functionName": "isPalindrome",
+  "signatureJson": "{\"functionName\":\"isPalindrome\",\"params\":[{\"name\":\"s\",\"type\":\"string\"}],\"returnType\":\"bool\"}",
+  "comparison": "whitespace",
+  "floatEpsilon": null,
+  "timeLimitMs": 2000,
+  "memoryLimitMb": 256,
+  "testCases": [
+    {
+      "input": "racecar\n",
+      "expected": "true",
+      "isSample": true,
+      "sortOrder": 0
+    },
+    {
+      "input": "hello\n",
+      "expected": "false",
+      "isSample": true,
+      "sortOrder": 1
+    },
+    {
+      "input": "a\n",
+      "expected": "true",
+      "isSample": true,
+      "sortOrder": 2
+    },
+    {
+      "input": "tzt\n",
+      "expected": "true",
+      "isSample": false,
+      "sortOrder": 3
+    },
+    {
+      "input": "cbccaba\n",
+      "expected": "false",
+      "isSample": false,
+      "sortOrder": 4
+    },
+    {
+      "input": "cba\n",
+      "expected": "false",
+      "isSample": false,
+      "sortOrder": 5
+    },
+    {
+      "input": "cacacabbb\n",
+      "expected": "false",
+      "isSample": false,
+      "sortOrder": 6
+    },
+    {
+      "input": "pqflulfqp\n",
+      "expected": "true",
+      "isSample": false,
+      "sortOrder": 7
+    },
+    {
+      "input": "bccacc\n",
+      "expected": "false",
+      "isSample": false,
+      "sortOrder": 8
+    },
+    {
+      "input": "yssy\n",
+      "expected": "true",
+      "isSample": false,
+      "sortOrder": 9
+    },
+    {
+      "input": "baac\n",
+      "expected": "false",
+      "isSample": false,
+      "sortOrder": 10
+    },
+    {
+      "input": "abccaac\n",
+      "expected": "false",
+      "isSample": false,
+      "sortOrder": 11
+    },
+    {
+      "input": "dddd\n",
+      "expected": "true",
+      "isSample": false,
+      "sortOrder": 12
+    },
+    {
+      "input": "cca\n",
+      "expected": "false",
+      "isSample": false,
+      "sortOrder": 13
+    },
+    {
+      "input": "hsbsh\n",
+      "expected": "true",
+      "isSample": false,
+      "sortOrder": 14
+    },
+    {
+      "input": "zkkkz\n",
+      "expected": "true",
+      "isSample": false,
+      "sortOrder": 15
+    },
+    {
+      "input": "b\n",
+      "expected": "true",
+      "isSample": false,
+      "sortOrder": 16
+    },
+    {
+      "input": "fcscf\n",
+      "expected": "true",
+      "isSample": false,
+      "sortOrder": 17
+    },
+    {
+      "input": "vvv\n",
+      "expected": "true",
+      "isSample": false,
+      "sortOrder": 18
+    },
+    {
+      "input": "vavav\n",
+      "expected": "true",
+      "isSample": false,
+      "sortOrder": 19
+    },
+    {
+      "input": "qsq\n",
+      "expected": "true",
+      "isSample": false,
+      "sortOrder": 20
+    },
+    {
+      "input": "aabcaa\n",
+      "expected": "false",
+      "isSample": false,
+      "sortOrder": 21
+    },
+    {
+      "input": "httftth\n",
+      "expected": "true",
+      "isSample": false,
+      "sortOrder": 22
+    }
+  ]
+}

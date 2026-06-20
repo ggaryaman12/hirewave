@@ -1,0 +1,157 @@
+{
+  "slug": "valid-anagram",
+  "title": "Valid Anagram",
+  "track": "core-patterns",
+  "topic": "strings",
+  "difficulty": "easy",
+  "statementMd": "Given two strings `s` and `t` of lowercase English letters, return `true` if `t` is an anagram of `s` (the same letters with the same frequencies), otherwise `false`.",
+  "constraintsMd": "- `1 <= s.length, t.length <= 10^5`\n- Both strings contain only lowercase English letters.",
+  "inputFormat": null,
+  "outputFormat": null,
+  "functionName": "isAnagram",
+  "signatureJson": "{\"functionName\":\"isAnagram\",\"params\":[{\"name\":\"s\",\"type\":\"string\"},{\"name\":\"t\",\"type\":\"string\"}],\"returnType\":\"bool\"}",
+  "comparison": "whitespace",
+  "floatEpsilon": null,
+  "timeLimitMs": 2000,
+  "memoryLimitMb": 256,
+  "testCases": [
+    {
+      "input": "anagram\nnagaram\n",
+      "expected": "true",
+      "isSample": true,
+      "sortOrder": 0
+    },
+    {
+      "input": "rat\ncar\n",
+      "expected": "false",
+      "isSample": true,
+      "sortOrder": 1
+    },
+    {
+      "input": "a\na\n",
+      "expected": "true",
+      "isSample": true,
+      "sortOrder": 2
+    },
+    {
+      "input": "ac\nca\n",
+      "expected": "true",
+      "isSample": false,
+      "sortOrder": 3
+    },
+    {
+      "input": "bc\ncb\n",
+      "expected": "true",
+      "isSample": false,
+      "sortOrder": 4
+    },
+    {
+      "input": "bcaba\ndaaba\n",
+      "expected": "false",
+      "isSample": false,
+      "sortOrder": 5
+    },
+    {
+      "input": "cbbdca\nbcbcba\n",
+      "expected": "false",
+      "isSample": false,
+      "sortOrder": 6
+    },
+    {
+      "input": "aabaa\ndbaab\n",
+      "expected": "false",
+      "isSample": false,
+      "sortOrder": 7
+    },
+    {
+      "input": "badda\nbadad\n",
+      "expected": "true",
+      "isSample": false,
+      "sortOrder": 8
+    },
+    {
+      "input": "ddaa\naadd\n",
+      "expected": "true",
+      "isSample": false,
+      "sortOrder": 9
+    },
+    {
+      "input": "d\na\n",
+      "expected": "false",
+      "isSample": false,
+      "sortOrder": 10
+    },
+    {
+      "input": "dbcdccb\nbcdccdb\n",
+      "expected": "true",
+      "isSample": false,
+      "sortOrder": 11
+    },
+    {
+      "input": "aabab\ncaddd\n",
+      "expected": "false",
+      "isSample": false,
+      "sortOrder": 12
+    },
+    {
+      "input": "ddc\ncab\n",
+      "expected": "false",
+      "isSample": false,
+      "sortOrder": 13
+    },
+    {
+      "input": "bababad\ndaabbab\n",
+      "expected": "true",
+      "isSample": false,
+      "sortOrder": 14
+    },
+    {
+      "input": "c\nd\n",
+      "expected": "false",
+      "isSample": false,
+      "sortOrder": 15
+    },
+    {
+      "input": "adabcdc\nbbdcdaa\n",
+      "expected": "false",
+      "isSample": false,
+      "sortOrder": 16
+    },
+    {
+      "input": "cc\ncc\n",
+      "expected": "true",
+      "isSample": false,
+      "sortOrder": 17
+    },
+    {
+      "input": "dc\ndc\n",
+      "expected": "true",
+      "isSample": false,
+      "sortOrder": 18
+    },
+    {
+      "input": "aaab\nbcdb\n",
+      "expected": "false",
+      "isSample": false,
+      "sortOrder": 19
+    },
+    {
+      "input": "ddb\nddb\n",
+      "expected": "true",
+      "isSample": false,
+      "sortOrder": 20
+    },
+    {
+      "input": "cbcca\nbaccc\n",
+      "expected": "true",
+      "isSample": false,
+      "sortOrder": 21
+    },
+    {
+      "input": "cdb\ndbd\n",
+      "expected": "false",
+      "isSample": false,
+      "sortOrder": 22
+    }
+  ]
+}

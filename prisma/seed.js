@@ -1,6 +1,7 @@
 const { PrismaClient } = require('@prisma/client');
 const crypto = require('crypto');
 const { seedDsa } = require('./seed-dsa');
+const { seedDsaFn } = require('./seed-dsa-fn');
 
 const prisma = new PrismaClient();
 
@@ -536,6 +537,8 @@ async function main() {
 
   // Slice 3: seed the DSA problem bank using the same prisma client instance.
   await seedDsa(prisma);
+  // Function-mode (LeetCode-style) bank from generated suites.
+  await seedDsaFn(prisma);
 }
 
 main()

@@ -1,0 +1,145 @@
+{
+  "slug": "count-distinct",
+  "title": "Count Distinct Elements",
+  "track": "core-patterns",
+  "topic": "arrays",
+  "difficulty": "easy",
+  "statementMd": "Given an integer array `nums`, return the number of distinct values it contains.",
+  "constraintsMd": "- `0 <= nums.length <= 10^5`\n- `-10^9 <= nums[i] <= 10^9`",
+  "inputFormat": null,
+  "outputFormat": null,
+  "functionName": "countDistinct",
+  "signatureJson": "{\"functionName\":\"countDistinct\",\"params\":[{\"name\":\"nums\",\"type\":\"int[]\"}],\"returnType\":\"int\"}",
+  "comparison": "whitespace",
+  "floatEpsilon": null,
+  "timeLimitMs": 2000,
+  "memoryLimitMb": 256,
+  "testCases": [
+    {
+      "input": "1 2 2 3 3 3\n",
+      "expected": "3",
+      "isSample": true,
+      "sortOrder": 0
+    },
+    {
+      "input": "5 5 5\n",
+      "expected": "1",
+      "isSample": true,
+      "sortOrder": 1
+    },
+    {
+      "input": "\n",
+      "expected": "0",
+      "isSample": true,
+      "sortOrder": 2
+    },
+    {
+      "input": "4 0 6 -6 4 -2 2 -5 3 -6\n",
+      "expected": "8",
+      "isSample": false,
+      "sortOrder": 3
+    },
+    {
+      "input": "-6 -1 0 -6 6 2 -1 0 -5\n",
+      "expected": "6",
+      "isSample": false,
+      "sortOrder": 4
+    },
+    {
+      "input": "2 -6 0 1 0 4 -5\n",
+      "expected": "6",
+      "isSample": false,
+      "sortOrder": 5
+    },
+    {
+      "input": "-5 -4 4 5 -6 -5 5 2 6\n",
+      "expected": "7",
+      "isSample": false,
+      "sortOrder": 6
+    },
+    {
+      "input": "-5\n",
+      "expected": "1",
+      "isSample": false,
+      "sortOrder": 7
+    },
+    {
+      "input": "2\n",
+      "expected": "1",
+      "isSample": false,
+      "sortOrder": 8
+    },
+    {
+      "input": "-6 -2 4 -5 -6 3 -6 3\n",
+      "expected": "5",
+      "isSample": false,
+      "sortOrder": 9
+    },
+    {
+      "input": "-6 -4 0 -1 -5 -3\n",
+      "expected": "6",
+      "isSample": false,
+      "sortOrder": 10
+    },
+    {
+      "input": "-4 3 -3 -3 3 -1 -1 -6 -5 3 4 2\n",
+      "expected": "8",
+      "isSample": false,
+      "sortOrder": 11
+    },
+    {
+      "input": "-1\n",
+      "expected": "1",
+      "isSample": false,
+      "sortOrder": 12
+    },
+    {
+      "input": "2 -4 5\n",
+      "expected": "3",
+      "isSample": false,
+      "sortOrder": 13
+    },
+    {
+      "input": "-5 4\n",
+      "expected": "2",
+      "isSample": false,
+      "sortOrder": 14
+    },
+    {
+      "input": "2 -4 6 -6 -5 4 1\n",
+      "expected": "7",
+      "isSample": false,
+      "sortOrder": 15
+    },
+    {
+      "input": "-6 3\n",
+      "expected": "2",
+      "isSample": false,
+      "sortOrder": 16
+    },
+    {
+      "input": "1 2 3 5 3 -3 -5 -4 3 3 6 -5\n",
+      "expected": "8",
+      "isSample": false,
+      "sortOrder": 17
+    },
+    {
+      "input": "4 -4 3 0 3\n",
+      "expected": "4",
+      "isSample": false,
+      "sortOrder": 18
+    },
+    {
+      "input": "5 6 3 -2 -6 -4\n",
+      "expected": "6",
+      "isSample": false,
+      "sortOrder": 19
+    },
+    {
+      "input": "-4 0 4 2 -6\n",
+      "expected": "5",
+      "isSample": false,
+      "sortOrder": 20
+    }
+  ]
+}

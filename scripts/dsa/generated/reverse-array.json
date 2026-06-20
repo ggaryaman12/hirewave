@@ -1,0 +1,145 @@
+{
+  "slug": "reverse-array",
+  "title": "Reverse an Array",
+  "track": "core-patterns",
+  "topic": "arrays",
+  "difficulty": "easy",
+  "statementMd": "Given an integer array `nums`, return a new array containing the same elements in reverse order.",
+  "constraintsMd": "- `0 <= nums.length <= 10^5`\n- `-10^9 <= nums[i] <= 10^9`",
+  "inputFormat": null,
+  "outputFormat": null,
+  "functionName": "reverseArray",
+  "signatureJson": "{\"functionName\":\"reverseArray\",\"params\":[{\"name\":\"nums\",\"type\":\"int[]\"}],\"returnType\":\"int[]\"}",
+  "comparison": "whitespace",
+  "floatEpsilon": null,
+  "timeLimitMs": 2000,
+  "memoryLimitMb": 256,
+  "testCases": [
+    {
+      "input": "1 2 3 4 5\n",
+      "expected": "5 4 3 2 1",
+      "isSample": true,
+      "sortOrder": 0
+    },
+    {
+      "input": "42\n",
+      "expected": "42",
+      "isSample": true,
+      "sortOrder": 1
+    },
+    {
+      "input": "\n",
+      "expected": "",
+      "isSample": true,
+      "sortOrder": 2
+    },
+    {
+      "input": "-40 18 -50 45 35 25 -34 4 -24\n",
+      "expected": "-24 4 -34 25 35 45 -50 18 -40",
+      "isSample": false,
+      "sortOrder": 3
+    },
+    {
+      "input": "-2\n",
+      "expected": "-2",
+      "isSample": false,
+      "sortOrder": 4
+    },
+    {
+      "input": "4 -8 25 4 45 30\n",
+      "expected": "30 45 4 25 -8 4",
+      "isSample": false,
+      "sortOrder": 5
+    },
+    {
+      "input": "42 -31 18 12 32\n",
+      "expected": "32 12 18 -31 42",
+      "isSample": false,
+      "sortOrder": 6
+    },
+    {
+      "input": "35 -1 21 34 -13 22 16 43\n",
+      "expected": "43 16 22 -13 34 21 -1 35",
+      "isSample": false,
+      "sortOrder": 7
+    },
+    {
+      "input": "30 34 15 0 18\n",
+      "expected": "18 0 15 34 30",
+      "isSample": false,
+      "sortOrder": 8
+    },
+    {
+      "input": "25\n",
+      "expected": "25",
+      "isSample": false,
+      "sortOrder": 9
+    },
+    {
+      "input": "5 -26 -42 36 20 2 -12\n",
+      "expected": "-12 2 20 36 -42 -26 5",
+      "isSample": false,
+      "sortOrder": 10
+    },
+    {
+      "input": "1 -4 -5 -30 26 -1 -22 -37\n",
+      "expected": "-37 -22 -1 26 -30 -5 -4 1",
+      "isSample": false,
+      "sortOrder": 11
+    },
+    {
+      "input": "-31 -34 -37 -18 -16 6 -44 -23 34\n",
+      "expected": "34 -23 -44 6 -16 -18 -37 -34 -31",
+      "isSample": false,
+      "sortOrder": 12
+    },
+    {
+      "input": "-38 -19 24 42\n",
+      "expected": "42 24 -19 -38",
+      "isSample": false,
+      "sortOrder": 13
+    },
+    {
+      "input": "15 2 -27 -38 -37 20 -41 -19 -24\n",
+      "expected": "-24 -19 -41 20 -37 -38 -27 2 15",
+      "isSample": false,
+      "sortOrder": 14
+    },
+    {
+      "input": "32 45 -44\n",
+      "expected": "-44 45 32",
+      "isSample": false,
+      "sortOrder": 15
+    },
+    {
+      "input": "9 37 -3\n",
+      "expected": "-3 37 9",
+      "isSample": false,
+      "sortOrder": 16
+    },
+    {
+      "input": "-36 8 -32 -11 -10 -11 35 -28\n",
+      "expected": "-28 35 -11 -10 -11 -32 8 -36",
+      "isSample": false,
+      "sortOrder": 17
+    },
+    {
+      "input": "27 49 34 -45 50 -47 24 39 47\n",
+      "expected": "47 39 24 -47 50 -45 34 49 27",
+      "isSample": false,
+      "sortOrder": 18
+    },
+    {
+      "input": "0 -39 -25 12 29 -33 18 -33\n",
+      "expected": "-33 18 -33 29 12 -25 -39 0",
+      "isSample": false,
+      "sortOrder": 19
+    },
+    {
+      "input": "-38 8 3 -7\n",
+      "expected": "-7 3 8 -38",
+      "isSample": false,
+      "sortOrder": 20
+    }
+  ]
+}

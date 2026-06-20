@@ -1,0 +1,82 @@
+[
+  {
+    "slug": "has-pair-with-sum",
+    "sampleCount": 3,
+    "hiddenCount": 25
+  },
+  {
+    "slug": "maximum-subarray-sum",
+    "sampleCount": 3,
+    "hiddenCount": 25
+  },
+  {
+    "slug": "second-largest",
+    "sampleCount": 3,
+    "hiddenCount": 20
+  },
+  {
+    "slug": "reverse-array",
+    "sampleCount": 3,
+    "hiddenCount": 18
+  },
+  {
+    "slug": "move-zeroes",
+    "sampleCount": 3,
+    "hiddenCount": 18
+  },
+  {
+    "slug": "count-distinct",
+    "sampleCount": 3,
+    "hiddenCount": 18
+  },
+  {
+    "slug": "majority-element",
+    "sampleCount": 3,
+    "hiddenCount": 20
+  },
+  {
+    "slug": "binary-search-index",
+    "sampleCount": 3,
+    "hiddenCount": 22
+  },
+  {
+    "slug": "is-palindrome",
+    "sampleCount": 3,
+    "hiddenCount": 20
+  },
+  {
+    "slug": "count-vowels",
+    "sampleCount": 3,
+    "hiddenCount": 18
+  },
+  {
+    "slug": "valid-anagram",
+    "sampleCount": 3,
+    "hiddenCount": 20
+  },
+  {
+    "slug": "gcd-two-numbers",
+    "sampleCount": 3,
+    "hiddenCount": 18
+  },
+  {
+    "slug": "nth-fibonacci",
+    "sampleCount": 3,
+    "hiddenCount": 20
+  },
+  {
+    "slug": "array-average",
+    "sampleCount": 3,
+    "hiddenCount": 18
+  },
+  {
+    "slug": "transpose-matrix",
+    "sampleCount": 3,
+    "hiddenCount": 18
+  },
+  {
+    "slug": "matrix-row-sums",
+    "sampleCount": 3,
+    "hiddenCount": 18
+  }
+]

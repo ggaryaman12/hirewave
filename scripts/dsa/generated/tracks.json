@@ -1,0 +1,35 @@
+[
+  {
+    "slug": "core-patterns",
+    "title": "Core Patterns",
+    "source": "Original Hirewave problem bank",
+    "sortOrder": 0,
+    "topics": [
+      {
+        "key": "arrays",
+        "title": "Arrays & Hashing",
+        "sortOrder": 0
+      },
+      {
+        "key": "searching",
+        "title": "Binary Search",
+        "sortOrder": 1
+      },
+      {
+        "key": "strings",
+        "title": "Strings",
+        "sortOrder": 2
+      },
+      {
+        "key": "math",
+        "title": "Math",
+        "sortOrder": 3
+      },
+      {
+        "key": "matrix",
+        "title": "Matrix",
+        "sortOrder": 4
+      }
+    ]
+  }
+]

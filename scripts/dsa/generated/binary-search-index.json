@@ -1,0 +1,169 @@
+{
+  "slug": "binary-search-index",
+  "title": "Binary Search",
+  "track": "core-patterns",
+  "topic": "searching",
+  "difficulty": "easy",
+  "statementMd": "Given a **sorted** array of distinct integers `nums` (ascending) and an integer `target`, return the index of `target` in `nums`, or `-1` if it is not present.",
+  "constraintsMd": "- `0 <= nums.length <= 10^5`\n- `nums` is sorted ascending with distinct values.\n- `-10^9 <= nums[i], target <= 10^9`",
+  "inputFormat": null,
+  "outputFormat": null,
+  "functionName": "search",
+  "signatureJson": "{\"functionName\":\"search\",\"params\":[{\"name\":\"nums\",\"type\":\"int[]\"},{\"name\":\"target\",\"type\":\"int\"}],\"returnType\":\"int\"}",
+  "comparison": "whitespace",
+  "floatEpsilon": null,
+  "timeLimitMs": 2000,
+  "memoryLimitMb": 256,
+  "testCases": [
+    {
+      "input": "-1 0 3 5 9 12\n9\n",
+      "expected": "4",
+      "isSample": true,
+      "sortOrder": 0
+    },
+    {
+      "input": "-1 0 3 5 9 12\n2\n",
+      "expected": "-1",
+      "isSample": true,
+      "sortOrder": 1
+    },
+    {
+      "input": "\n1\n",
+      "expected": "-1",
+      "isSample": true,
+      "sortOrder": 2
+    },
+    {
+      "input": "-37 -12 -1 25 30 31 35\n73\n",
+      "expected": "-1",
+      "isSample": false,
+      "sortOrder": 3
+    },
+    {
+      "input": "-37 -24 -21 -19 -2\n-19\n",
+      "expected": "3",
+      "isSample": false,
+      "sortOrder": 4
+    },
+    {
+      "input": "-27 -25 3 20\n63\n",
+      "expected": "-1",
+      "isSample": false,
+      "sortOrder": 5
+    },
+    {
+      "input": "26\n26\n",
+      "expected": "0",
+      "isSample": false,
+      "sortOrder": 6
+    },
+    {
+      "input": "-39 -21\n59\n",
+      "expected": "-1",
+      "isSample": false,
+      "sortOrder": 7
+    },
+    {
+      "input": "-40 -31 13\n-40\n",
+      "expected": "0",
+      "isSample": false,
+      "sortOrder": 8
+    },
+    {
+      "input": "-37 -33 -27 -19 -18 -15 -6 4 18 23\n-18\n",
+      "expected": "4",
+      "isSample": false,
+      "sortOrder": 9
+    },
+    {
+      "input": "-13 -12\n-12\n",
+      "expected": "1",
+      "isSample": false,
+      "sortOrder": 10
+    },
+    {
+      "input": "-36 -30 -25 -14 23\n-36\n",
+      "expected": "0",
+      "isSample": false,
+      "sortOrder": 11
+    },
+    {
+      "input": "-36\n54\n",
+      "expected": "-1",
+      "isSample": false,
+      "sortOrder": 12
+    },
+    {
+      "input": "-39 -34 -31 -24 -17 -1 0 34\n-31\n",
+      "expected": "2",
+      "isSample": false,
+      "sortOrder": 13
+    },
+    {
+      "input": "-39 -30 -22 -14 -12 26 34\n-30\n",
+      "expected": "1",
+      "isSample": false,
+      "sortOrder": 14
+    },
+    {
+      "input": "-36\n-36\n",
+      "expected": "0",
+      "isSample": false,
+      "sortOrder": 15
+    },
+    {
+      "input": "-38 -26 -10 -6 9 16 17 26 30\n26\n",
+      "expected": "7",
+      "isSample": false,
+      "sortOrder": 16
+    },
+    {
+      "input": "-20 3\n3\n",
+      "expected": "1",
+      "isSample": false,
+      "sortOrder": 17
+    },
+    {
+      "input": "-28 -24\n48\n",
+      "expected": "-1",
+      "isSample": false,
+      "sortOrder": 18
+    },
+    {
+      "input": "3\n3\n",
+      "expected": "0",
+      "isSample": false,
+      "sortOrder": 19
+    },
+    {
+      "input": "-34 -17 -14 21 32\n-17\n",
+      "expected": "1",
+      "isSample": false,
+      "sortOrder": 20
+    },
+    {
+      "input": "-7\n-7\n",
+      "expected": "0",
+      "isSample": false,
+      "sortOrder": 21
+    },
+    {
+      "input": "-35 -4 11 21 25 39\n-35\n",
+      "expected": "0",
+      "isSample": false,
+      "sortOrder": 22
+    },
+    {
+      "input": "-16 28\n66\n",
+      "expected": "-1",
+      "isSample": false,
+      "sortOrder": 23
+    },
+    {
+      "input": "-40 -28 -27 -10 -9 -4 3 5 11 22\n60\n",
+      "expected": "-1",
+      "isSample": false,
+      "sortOrder": 24
+    }
+  ]
+}

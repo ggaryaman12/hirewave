@@ -1,0 +1,157 @@
+{
+  "slug": "second-largest",
+  "title": "Second Largest Element",
+  "track": "core-patterns",
+  "topic": "arrays",
+  "difficulty": "easy",
+  "statementMd": "Given an array `nums` that contains at least two **distinct** values, return the second largest distinct value in the array.",
+  "constraintsMd": "- `2 <= nums.length <= 10^5`\n- The array contains at least two distinct values.",
+  "inputFormat": null,
+  "outputFormat": null,
+  "functionName": "secondLargest",
+  "signatureJson": "{\"functionName\":\"secondLargest\",\"params\":[{\"name\":\"nums\",\"type\":\"int[]\"}],\"returnType\":\"int\"}",
+  "comparison": "whitespace",
+  "floatEpsilon": null,
+  "timeLimitMs": 2000,
+  "memoryLimitMb": 256,
+  "testCases": [
+    {
+      "input": "3 1 4 1 5 9 2 6\n",
+      "expected": "6",
+      "isSample": true,
+      "sortOrder": 0
+    },
+    {
+      "input": "10 20\n",
+      "expected": "10",
+      "isSample": true,
+      "sortOrder": 1
+    },
+    {
+      "input": "7 7 3\n",
+      "expected": "3",
+      "isSample": true,
+      "sortOrder": 2
+    },
+    {
+      "input": "24 -14 -29 26 -4\n",
+      "expected": "24",
+      "isSample": false,
+      "sortOrder": 3
+    },
+    {
+      "input": "13 -20 15 -20\n",
+      "expected": "13",
+      "isSample": false,
+      "sortOrder": 4
+    },
+    {
+      "input": "-8 0 -8 26\n",
+      "expected": "0",
+      "isSample": false,
+      "sortOrder": 5
+    },
+    {
+      "input": "26 -21 20 -9 -23 9 -23 2\n",
+      "expected": "20",
+      "isSample": false,
+      "sortOrder": 6
+    },
+    {
+      "input": "29 13 -7 -11 -2 -28 8 28\n",
+      "expected": "28",
+      "isSample": false,
+      "sortOrder": 7
+    },
+    {
+      "input": "-23 25 17 -23 -13\n",
+      "expected": "17",
+      "isSample": false,
+      "sortOrder": 8
+    },
+    {
+      "input": "19 0 -11 -11\n",
+      "expected": "0",
+      "isSample": false,
+      "sortOrder": 9
+    },
+    {
+      "input": "-20 2 4 1 10 -20 -17\n",
+      "expected": "4",
+      "isSample": false,
+      "sortOrder": 10
+    },
+    {
+      "input": "4 -25 -18 -25 24\n",
+      "expected": "4",
+      "isSample": false,
+      "sortOrder": 11
+    },
+    {
+      "input": "-12 18 -25 -24 7 -27 6 -7\n",
+      "expected": "7",
+      "isSample": false,
+      "sortOrder": 12
+    },
+    {
+      "input": "-8 -8 -18 -2 -18 17 -1 21\n",
+      "expected": "17",
+      "isSample": false,
+      "sortOrder": 13
+    },
+    {
+      "input": "-30 -10 -23 20 11\n",
+      "expected": "11",
+      "isSample": false,
+      "sortOrder": 14
+    },
+    {
+      "input": "-15 -24 6 -24 -8 -15\n",
+      "expected": "-8",
+      "isSample": false,
+      "sortOrder": 15
+    },
+    {
+      "input": "4 3 13 3 10 -23 -23\n",
+      "expected": "10",
+      "isSample": false,
+      "sortOrder": 16
+    },
+    {
+      "input": "-10 12 21 -5 20\n",
+      "expected": "20",
+      "isSample": false,
+      "sortOrder": 17
+    },
+    {
+      "input": "17 -1\n",
+      "expected": "-1",
+      "isSample": false,
+      "sortOrder": 18
+    },
+    {
+      "input": "-10 -10 6 6 11\n",
+      "expected": "6",
+      "isSample": false,
+      "sortOrder": 19
+    },
+    {
+      "input": "14 -25 -25 14\n",
+      "expected": "-25",
+      "isSample": false,
+      "sortOrder": 20
+    },
+    {
+      "input": "-30 -30 1\n",
+      "expected": "-30",
+      "isSample": false,
+      "sortOrder": 21
+    },
+    {
+      "input": "-7 22 -2 -7\n",
+      "expected": "-2",
+      "isSample": false,
+      "sortOrder": 22
+    }
+  ]
+}

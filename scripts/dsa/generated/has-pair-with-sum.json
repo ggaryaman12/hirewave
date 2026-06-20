@@ -1,0 +1,187 @@
+{
+  "slug": "has-pair-with-sum",
+  "title": "Pair With Target Sum",
+  "track": "core-patterns",
+  "topic": "arrays",
+  "difficulty": "easy",
+  "statementMd": "Given an array of integers `nums` and an integer `target`, determine whether **two distinct positions** `i` and `j` exist such that `nums[i] + nums[j] == target`.\n\nReturn `true` if such a pair exists, otherwise `false`.",
+  "constraintsMd": "- `1 <= nums.length <= 10^4`\n- `-10^9 <= nums[i], target <= 10^9`",
+  "inputFormat": null,
+  "outputFormat": null,
+  "functionName": "hasPairWithSum",
+  "signatureJson": "{\"functionName\":\"hasPairWithSum\",\"params\":[{\"name\":\"nums\",\"type\":\"int[]\"},{\"name\":\"target\",\"type\":\"int\"}],\"returnType\":\"bool\"}",
+  "comparison": "whitespace",
+  "floatEpsilon": null,
+  "timeLimitMs": 2000,
+  "memoryLimitMb": 256,
+  "testCases": [
+    {
+      "input": "2 7 11 15\n9\n",
+      "expected": "true",
+      "isSample": true,
+      "sortOrder": 0
+    },
+    {
+      "input": "3 2 4\n6\n",
+      "expected": "true",
+      "isSample": true,
+      "sortOrder": 1
+    },
+    {
+      "input": "1 1\n3\n",
+      "expected": "false",
+      "isSample": true,
+      "sortOrder": 2
+    },
+    {
+      "input": "-2 -2\n-4\n",
+      "expected": "true",
+      "isSample": false,
+      "sortOrder": 3
+    },
+    {
+      "input": "15 -4 5\n142\n",
+      "expected": "false",
+      "isSample": false,
+      "sortOrder": 4
+    },
+    {
+      "input": "-18 9 -14\n-32\n",
+      "expected": "true",
+      "isSample": false,
+      "sortOrder": 5
+    },
+    {
+      "input": "-2 13 20 -15 -13\n-15\n",
+      "expected": "true",
+      "isSample": false,
+      "sortOrder": 6
+    },
+    {
+      "input": "-7 7 -5\n157\n",
+      "expected": "false",
+      "isSample": false,
+      "sortOrder": 7
+    },
+    {
+      "input": "-19 -2 13 -18 1\n-18\n",
+      "expected": "true",
+      "isSample": false,
+      "sortOrder": 8
+    },
+    {
+      "input": "11 -20 20 -3 14 -16\n-5\n",
+      "expected": "true",
+      "isSample": false,
+      "sortOrder": 9
+    },
+    {
+      "input": "0 -18 13 5 7 -4 -4 -4\n-4\n",
+      "expected": "true",
+      "isSample": false,
+      "sortOrder": 10
+    },
+    {
+      "input": "-5 2 -7 -3 15 10 -11\n-16\n",
+      "expected": "true",
+      "isSample": false,
+      "sortOrder": 11
+    },
+    {
+      "input": "-18 -19\n-37\n",
+      "expected": "true",
+      "isSample": false,
+      "sortOrder": 12
+    },
+    {
+      "input": "11 -1 -2 -16 15 15 15 7\n121\n",
+      "expected": "false",
+      "isSample": false,
+      "sortOrder": 13
+    },
+    {
+      "input": "-9 4 -15 8\n-1\n",
+      "expected": "true",
+      "isSample": false,
+      "sortOrder": 14
+    },
+    {
+      "input": "-15 5\n-10\n",
+      "expected": "true",
+      "isSample": false,
+      "sortOrder": 15
+    },
+    {
+      "input": "-4 -17 -20\n105\n",
+      "expected": "false",
+      "isSample": false,
+      "sortOrder": 16
+    },
+    {
+      "input": "0 12 12\n159\n",
+      "expected": "false",
+      "isSample": false,
+      "sortOrder": 17
+    },
+    {
+      "input": "-2 5 -13\n-15\n",
+      "expected": "true",
+      "isSample": false,
+      "sortOrder": 18
+    },
+    {
+      "input": "-20 -3 0 1\n-19\n",
+      "expected": "true",
+      "isSample": false,
+      "sortOrder": 19
+    },
+    {
+      "input": "10 -19 -14 -11\n101\n",
+      "expected": "false",
+      "isSample": false,
+      "sortOrder": 20
+    },
+    {
+      "input": "-5 -11 -19 -18 3 5 7\n171\n",
+      "expected": "false",
+      "isSample": false,
+      "sortOrder": 21
+    },
+    {
+      "input": "-9 11 -9\n114\n",
+      "expected": "false",
+      "isSample": false,
+      "sortOrder": 22
+    },
+    {
+      "input": "-13 12 6 0 14 3 -19 0\n128\n",
+      "expected": "false",
+      "isSample": false,
+      "sortOrder": 23
+    },
+    {
+      "input": "8 -15 19 8 18 14 10 13\n21\n",
+      "expected": "true",
+      "isSample": false,
+      "sortOrder": 24
+    },
+    {
+      "input": "-16 -4 -6 0 -16\n-32\n",
+      "expected": "true",
+      "isSample": false,
+      "sortOrder": 25
+    },
+    {
+      "input": "8 10 -1\n171\n",
+      "expected": "false",
+      "isSample": false,
+      "sortOrder": 26
+    },
+    {
+      "input": "18 -13 1 5 -4 2 14\n163\n",
+      "expected": "false",
+      "isSample": false,
+      "sortOrder": 27
+    }
+  ]
+}
