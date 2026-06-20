@@ -477,10 +477,11 @@ test.describe('session API', () => {
       ]),
     );
 
-    const authCookie = `hirewave_demo_user=${process.env.DEMO_USER_EMAIL || 'founder@hirewave.local'}`;
-    const markdownExport = await request.get(`/api/reports/${session.id}/export?format=markdown`, {
-      headers: { Cookie: authCookie },
-    });
+    // The export route guards with requireHiringUser, which reads the real
+    // Auth.js session. Establish one for the seeded demo recruiter — signIn sets
+    // the session cookie on the shared request context, so later calls carry it.
+    await request.get('/api/auth/demo?next=/dashboard');
+    const markdownExport = await request.get(`/api/reports/${session.id}/export?format=markdown`);
     expect(markdownExport.ok()).toBeTruthy();
     expect(markdownExport.headers()['content-type']).toContain('text/markdown');
     expect(markdownExport.headers()['content-disposition']).toContain('.md');
@@ -490,9 +491,7 @@ test.describe('session API', () => {
     expect(markdownBody).toContain('## AI Transcript');
     expect(markdownBody).toContain('## Commands');
 
-    const jsonExport = await request.get(`/api/reports/${session.id}/export?format=json`, {
-      headers: { Cookie: authCookie },
-    });
+    const jsonExport = await request.get(`/api/reports/${session.id}/export?format=json`);
     expect(jsonExport.ok()).toBeTruthy();
     expect(jsonExport.headers()['content-type']).toContain('application/json');
     expect(jsonExport.headers()['content-disposition']).toContain('.json');

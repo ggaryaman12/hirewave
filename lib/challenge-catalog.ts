@@ -1128,7 +1128,8 @@ export async function createCustomChallengeDraft(input: CustomChallengeDraftInpu
         `${parsed.domain} ${parsed.taskType.toLowerCase()} task for a ${parsed.seniority} ${parsed.role}. ` +
         `Primary failure mode: ${parsed.failureMode}.`,
       instructions:
-        `${parsed.context}\n\nGenerated as a controlled draft template. Review the brief, starter files, and tests before using this with candidates.`,
+        `${parsed.context}\n\nPrimary failure mode: ${parsed.failureMode}.\n\n` +
+        `Generated as a controlled draft template. Review the brief, starter files, and tests before using this with candidates.`,
       rubricJson: toJson(ENTERPRISE_RUBRIC),
       files: {
         create: files.map((file) => ({ ...file })),

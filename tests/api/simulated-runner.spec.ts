@@ -121,7 +121,11 @@ test.describe('simulated checkout runner', () => {
 test.describe('simulated custom task runner', () => {
   test('uses generic evidence checks for non-checkout challenge templates', () => {
     const result = runSimulatedCommand('npm test', [
-      { path: 'README.md', language: 'markdown', content: '# Custom task' },
+      {
+        path: 'README.md',
+        language: 'markdown',
+        content: '# Custom task\n\nDiagnose the under-scoped server boundary, then document the root cause, risk controls, and verification evidence for the candidate.',
+      },
       {
         path: 'src/solution-plan.ts',
         language: 'typescript',
