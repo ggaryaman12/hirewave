@@ -159,11 +159,14 @@ export function ProblemWorkspace({ slug, problem }: { slug: string; problem: Pro
     setSubmitting(true);
     setError(null);
     setRunResults(null);
+    // One key per Submit click. A network retry of this same click reuses it,
+    // so the server judges the attempt exactly once (idempotent submit).
+    const idempotencyKey = crypto.randomUUID();
     try {
       const response = await fetch(`/api/dsa/problems/${slug}/submit`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ language, source }),
+        body: JSON.stringify({ language, source, idempotencyKey }),
       });
       if (!response.ok) throw new Error('Submit failed');
       const body = (await response.json()) as SubmitResponse;

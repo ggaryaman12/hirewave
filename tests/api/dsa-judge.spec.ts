@@ -131,4 +131,30 @@ test.describe('DSA judge (Slice 1)', () => {
     expect(result?.results[0].status).toBe('accepted');
     expect(result?.results[0].input).toBe('a');
   });
+
+  test('idempotent submit: same key returns the same submission and judges once', async () => {
+    const slug = `idem-${crypto.randomBytes(4).toString('hex')}`;
+    await createProblem(slug, [{ input: 'a', expected: 'a' }]);
+
+    let runCount = 0;
+    const countingRun: JudgeRunFn = async (input) => {
+      runCount += 1;
+      return { status: 'ok', stdout: input.stdin, stderr: '', exitCode: 0, signal: null, runtimeMs: 1, memoryKb: 1024 };
+    };
+
+    const key = crypto.randomUUID();
+    const first = await submitSolution({ slug, language: 'echo', source: 'x', idempotencyKey: key, run: countingRun });
+    const second = await submitSolution({ slug, language: 'echo', source: 'x', idempotencyKey: key, run: countingRun });
+
+    // Same attempt -> same submission, judged exactly once (no double Judge0 run).
+    expect(first?.submissionId).toBe(second?.submissionId);
+    expect(first?.verdict).toBe('accepted');
+    expect(runCount).toBe(1);
+
+    const rows = await db.dsaSubmission.count({ where: { idempotencyKey: key } });
+    expect(rows).toBe(1);
+
+    const stored = await db.dsaSubmission.findFirstOrThrow({ where: { idempotencyKey: key } });
+    expect(stored.status).toBe('done');
+  });
 });

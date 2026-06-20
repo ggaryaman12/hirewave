@@ -387,6 +387,12 @@ model DsaSubmission {
   userId      String?
   language    String
   source      String
+  // Lifecycle state machine: running -> done | error. Synchronous today; the
+  // judge() seam lets this flip to an async worker later without a schema change.
+  status      String     @default("running") // running | done | error
+  // Per-attempt dedupe key (client-generated UUID). A double-click or network
+  // retry of the SAME attempt collapses onto one submission = one judge run.
+  idempotencyKey String?  @unique
   verdict     String     @default("judging")
   passedCount Int        @default(0)
   totalCount  Int        @default(0)

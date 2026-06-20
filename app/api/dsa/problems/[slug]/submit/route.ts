@@ -7,6 +7,9 @@ const schema = z.object({
   language: z.enum(['cpp', 'java', 'javascript']),
   source: z.string().min(1).max(200_000),
   sessionId: z.string().optional(),
+  // Client-generated UUID per Submit click; a network retry of the same click
+  // reuses it so the attempt judges exactly once. Optional for back-compat.
+  idempotencyKey: z.string().min(8).max(200).optional(),
 });
 
 export async function POST(request: NextRequest, { params }: { params: { slug: string } }) {
@@ -25,6 +28,7 @@ export async function POST(request: NextRequest, { params }: { params: { slug: s
       language: body.language,
       source: body.source,
       sessionId: body.sessionId,
+      idempotencyKey: body.idempotencyKey,
       userId: session?.user?.id,
     });
     if (!result) return NextResponse.json({ error: 'Problem not found' }, { status: 404 });
