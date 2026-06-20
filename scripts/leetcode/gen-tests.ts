@@ -114,20 +114,37 @@ HARNESS I/O (must match): args are passed in signature order. The generator retu
 PROBLEM STATEMENT:
 ${statement.slice(0, 2500)}
 
-Return ONLY a JSON object, no markdown, with two string fields:
-{"reference": "function ${sig.functionName}(...) { ... }", "generator": "function gen(rand){ /* rand() -> [0,1). return [arg1, arg2, ...] */ }"}
-The reference MUST be named exactly ${sig.functionName}. The generator MUST be named gen and take a single rand function. Keep generated inputs small (arrays <= 12, values modest).`;
+Reply with EXACTLY two JavaScript code blocks and nothing else:
+
+\`\`\`js
+function ${sig.functionName}(...) { /* correct solution */ }
+\`\`\`
+
+\`\`\`js
+function gen(rand) { /* rand() -> [0,1). return [arg1, arg2, ...] respecting constraints */ }
+\`\`\`
+
+The first block MUST define function ${sig.functionName}. The second MUST define function gen taking one rand argument. Keep generated inputs small (arrays <= 12, modest values).`;
 }
 
-function extractJson(text: string): { reference: string; generator: string } | null {
-  const cleaned = text.replace(/```json|```/g, '').trim();
-  const match = cleaned.match(/\{[\s\S]*\}/);
-  if (!match) return null;
-  try {
-    const obj = JSON.parse(match[0]);
-    if (typeof obj.reference === 'string' && typeof obj.generator === 'string') return obj;
-  } catch {
-    /* fall through */
+// Prefer fenced code blocks (robust for multi-line code); fall back to JSON.
+function extractRefGen(text: string, fnName: string): { reference: string; generator: string } | null {
+  const blocks = [...text.matchAll(/```(?:js|javascript)?\s*([\s\S]*?)```/g)].map((m) => m[1].trim()).filter(Boolean);
+  if (blocks.length) {
+    const reference = blocks.find((b) => new RegExp(`function\\s+${fnName}\\b`).test(b));
+    const generator = blocks.find((b) => /function\s+gen\b/.test(b));
+    if (reference && generator) return { reference, generator };
+    // Two unlabeled blocks: assume [reference, generator].
+    if (blocks.length >= 2 && /function\s+gen\b/.test(blocks[1])) return { reference: blocks[0], generator: blocks[1] };
+  }
+  const match = text.replace(/```json|```/g, '').match(/\{[\s\S]*\}/);
+  if (match) {
+    try {
+      const obj = JSON.parse(match[0]);
+      if (typeof obj.reference === 'string' && typeof obj.generator === 'string') return obj;
+    } catch {
+      /* none */
+    }
   }
   return null;
 }
@@ -194,8 +211,8 @@ async function main() {
     const samples = p.testCases.filter((t) => t.isSample).map((t) => ({ input: t.input, expected: t.expected }));
     try {
       const text = await callLLM(provider2, buildPrompt(p.statementMd, sig, samples));
-      const parsed = extractJson(text);
-      if (!parsed) { console.log(`  - ${p.slug} [${provider2}]: no JSON ref/gen`); continue; }
+      const parsed = extractRefGen(text, sig.functionName);
+      if (!parsed) { console.log(`  - ${p.slug} [${provider2}]: no ref/gen blocks`); continue; }
 
       const valid = await validateReference(sig, parsed.reference, samples);
       if (!valid) { console.log(`  - ${p.slug} [${provider2}]: reference failed samples (skipped, keeps samples)`); continue; }
