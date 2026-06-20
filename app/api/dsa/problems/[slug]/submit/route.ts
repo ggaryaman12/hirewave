@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
+import { auth } from '@/auth';
 import { submitSolution } from '@/lib/judge/submit';
 
 const schema = z.object({
@@ -16,12 +17,15 @@ export async function POST(request: NextRequest, { params }: { params: { slug: s
     return NextResponse.json({ error: 'Invalid request: language must be cpp/java/javascript and source non-empty.' }, { status: 400 });
   }
 
+  const session = await auth();
+
   try {
     const result = await submitSolution({
       slug: params.slug,
       language: body.language,
       source: body.source,
       sessionId: body.sessionId,
+      userId: session?.user?.id,
     });
     if (!result) return NextResponse.json({ error: 'Problem not found' }, { status: 404 });
     return NextResponse.json(result);

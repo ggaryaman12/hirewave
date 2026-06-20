@@ -7,6 +7,13 @@ import {
   uniqueTestEmail,
 } from '../helpers/session-fixtures';
 
+// Establishes a real recruiter session (dev-only demo sign-in) before touching
+// the company dashboard, which is now behind auth.
+async function loginAsRecruiter(page: Page) {
+  await page.goto('/api/auth/demo?next=/dashboard');
+  await page.waitForURL(/\/dashboard/);
+}
+
 async function replaceActiveEditor(page: Page, content: string) {
   await page.locator('textarea').first().fill(content);
   await page.waitForTimeout(900);
@@ -16,10 +23,11 @@ test.describe('candidate assessment flow', () => {
   test('shows the expanded challenge catalog and creates a custom draft template', async ({ page }) => {
     const draftTitle = `Payments Draft ${Date.now()}`;
 
+    await loginAsRecruiter(page);
     await page.goto('/dashboard/assessments/new');
     await expect(page.getByRole('heading', { name: 'Create assessment' })).toBeVisible();
-    await expect(page.getByText('Webhook Idempotency And Order State')).toBeVisible();
-    await expect(page.getByText('Multi-Tenant Permission Leak')).toBeVisible();
+    await expect(page.getByRole('heading', { name: 'Webhook Idempotency And Order State' })).toBeVisible();
+    await expect(page.getByRole('heading', { name: 'Multi-Tenant Permission Leak' })).toBeVisible();
     await expect(page.getByRole('heading', { name: 'Custom task draft' })).toBeVisible();
 
     await page.getByRole('textbox', { name: 'Task title' }).fill(draftTitle);
@@ -32,7 +40,7 @@ test.describe('candidate assessment flow', () => {
     await expect(page).toHaveURL(/customChallengeId=/);
     await expect(page.getByText('Draft template ready')).toBeVisible();
     await expect(page.getByRole('combobox', { name: 'Challenge template' })).toHaveValue(/.+/);
-    await expect(page.getByText(draftTitle)).toBeVisible();
+    await expect(page.getByText(draftTitle).first()).toBeVisible();
   });
 
   test('formats AI markdown responses and shows a waiting state', async ({ page }) => {
@@ -185,6 +193,7 @@ test.describe('candidate assessment flow', () => {
     const session = await findSessionByToken(sessionToken);
     expect(session?.evaluationReport).toBeTruthy();
 
+    await loginAsRecruiter(page);
     await page.goto(`/dashboard/reports/${session?.id}`);
     await expect(page.getByRole('heading', { name: `${candidateName} report` })).toBeVisible();
     await expect(page.getByText(candidateEmail)).toBeVisible();

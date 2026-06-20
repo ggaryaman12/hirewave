@@ -1,34 +1,22 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { DEMO_AUTH_COOKIE } from '@/lib/auth/demo-auth';
+import { signIn } from '@/auth';
+import { demoRecruiterCredentials, ensureDemoRecruiter } from '@/lib/auth/demo-auth';
 import { ensureChallengeCatalog } from '@/lib/challenge-catalog';
-import { db } from '@/lib/db';
-import { ensureDemoWorkspace } from '@/lib/demo-challenge';
 
+// DEV-ONLY convenience: establishes a real Auth.js session for the seeded demo
+// recruiter and redirects. Disabled in production (use /login there).
 export async function GET(request: NextRequest) {
-  const requestedNext = request.nextUrl.searchParams.get('next') || '/dashboard';
-  const next = requestedNext.startsWith('/') && !requestedNext.startsWith('//')
-    ? requestedNext
-    : '/dashboard';
-  const email = process.env.DEMO_USER_EMAIL || 'founder@hirewave.local';
+  if (process.env.NODE_ENV === 'production') {
+    return NextResponse.json({ error: 'Not available in production. Use /login.' }, { status: 404 });
+  }
 
-  const user = await db.user.upsert({
-    where: { email },
-    update: {},
-    create: {
-      name: 'Demo Founder',
-      email,
-    },
-  });
-  await ensureDemoWorkspace(user.id);
+  const requested = request.nextUrl.searchParams.get('next') || '/dashboard';
+  const next = requested.startsWith('/') && !requested.startsWith('//') ? requested : '/dashboard';
+
+  await ensureDemoRecruiter();
   await ensureChallengeCatalog();
 
-  const response = NextResponse.redirect(new URL(next, request.url));
-  response.cookies.set(DEMO_AUTH_COOKIE, email, {
-    httpOnly: true,
-    sameSite: 'lax',
-    path: '/',
-    maxAge: 60 * 60 * 24 * 30,
-  });
-
-  return response;
+  const { email, password } = demoRecruiterCredentials();
+  // signIn issues the session cookie and returns a redirect Response.
+  return signIn('credentials', { email, password, redirectTo: next });
 }

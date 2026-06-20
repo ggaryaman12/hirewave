@@ -1,6 +1,7 @@
 import Link from 'next/link';
-import { ArrowRight, Code2, Layers } from 'lucide-react';
+import { ArrowRight, Check, Code2, Layers, CircleDot } from 'lucide-react';
 import { db } from '@/lib/db';
+import { getCurrentUser } from '@/lib/auth/session';
 import { cn } from '@/lib/utils';
 
 const DIFFICULTY_STYLES: Record<string, string> = {
@@ -23,7 +24,34 @@ function parseTags(json: string | null): string[] {
   }
 }
 
+function ProgressTag({ status }: { status?: 'solved' | 'attempted' }) {
+  if (status === 'solved') {
+    return (
+      <span className="inline-flex items-center gap-1 rounded-full bg-emerald-500/15 px-2 py-0.5 text-[9px] font-black uppercase tracking-[0.1em] text-emerald-300">
+        <Check className="h-3 w-3" /> Solved
+      </span>
+    );
+  }
+  if (status === 'attempted') {
+    return (
+      <span className="inline-flex items-center gap-1 rounded-full bg-amber-500/15 px-2 py-0.5 text-[9px] font-black uppercase tracking-[0.1em] text-amber-300">
+        <CircleDot className="h-3 w-3" /> Tried
+      </span>
+    );
+  }
+  return null;
+}
+
 export default async function DsaPage() {
+  const currentUser = await getCurrentUser();
+  const progressRows = currentUser
+    ? await db.dsaProblemProgress.findMany({
+        where: { userId: currentUser.id },
+        select: { problemId: true, status: true },
+      })
+    : [];
+  const progressByProblem = new Map(progressRows.map((row) => [row.problemId, row.status as 'solved' | 'attempted']));
+
   const tracks = await db.dsaTrack.findMany({
     orderBy: { sortOrder: 'asc' },
     include: {
@@ -99,6 +127,7 @@ export default async function DsaPage() {
                             className="group flex items-center justify-between gap-3 rounded-lg border border-white/10 bg-[#151515] px-4 py-3 transition hover:border-[#f15a29]/40 hover:bg-white/[0.06]"
                           >
                             <span className="flex min-w-0 items-center gap-2">
+                              <ProgressTag status={progressByProblem.get(problem.id)} />
                               <span className="min-w-0 truncate text-sm font-bold text-white/85 group-hover:text-white">
                                 {problem.title}
                               </span>

@@ -375,12 +375,17 @@ function tokenHash(token) {
 }
 
 async function main() {
+  const bcrypt = require('bcryptjs');
+  const demoEmail = (process.env.DEMO_RECRUITER_EMAIL || process.env.DEMO_USER_EMAIL || 'founder@hirewave.local').toLowerCase();
+  const demoPasswordHash = await bcrypt.hash(process.env.DEMO_RECRUITER_PASSWORD || 'demo-password-123', 10);
   const user = await prisma.user.upsert({
-    where: { email: process.env.DEMO_USER_EMAIL || 'founder@hirewave.local' },
-    update: {},
+    where: { email: demoEmail },
+    update: { passwordHash: demoPasswordHash, role: 'recruiter' },
     create: {
       name: 'Demo Founder',
-      email: process.env.DEMO_USER_EMAIL || 'founder@hirewave.local',
+      email: demoEmail,
+      passwordHash: demoPasswordHash,
+      role: 'recruiter',
     },
   });
 

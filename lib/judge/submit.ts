@@ -41,6 +41,7 @@ export async function submitSolution(input: {
   language: string;
   source: string;
   sessionId?: string;
+  userId?: string;
   run?: JudgeRunFn;
 }) {
   const problem = await loadProblem(input.slug);
@@ -63,6 +64,7 @@ export async function submitSolution(input: {
     data: {
       problemId: problem.id,
       sessionId: input.sessionId,
+      userId: input.userId,
       language: input.language,
       source: input.source,
       verdict: grade.verdict,
@@ -75,6 +77,35 @@ export async function submitSolution(input: {
       resultsJson: toJson(grade.results),
     },
   });
+
+  // Track per-student progress (solved / attempted). Best-effort: never let a
+  // tracking failure break judging. Never downgrade a solved problem.
+  if (input.userId) {
+    try {
+      const accepted = grade.verdict === 'accepted';
+      const existing = await db.dsaProblemProgress.findUnique({
+        where: { userId_problemId: { userId: input.userId, problemId: problem.id } },
+      });
+      const solved = accepted || existing?.status === 'solved';
+      await db.dsaProblemProgress.upsert({
+        where: { userId_problemId: { userId: input.userId, problemId: problem.id } },
+        create: {
+          userId: input.userId,
+          problemId: problem.id,
+          attempts: 1,
+          status: accepted ? 'solved' : 'attempted',
+          solvedAt: accepted ? new Date() : null,
+        },
+        update: {
+          attempts: { increment: 1 },
+          status: solved ? 'solved' : 'attempted',
+          solvedAt: existing?.solvedAt ?? (accepted ? new Date() : null),
+        },
+      });
+    } catch {
+      /* progress tracking is best-effort */
+    }
+  }
 
   return {
     submissionId: submission.id,
