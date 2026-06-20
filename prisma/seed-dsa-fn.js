@@ -79,7 +79,7 @@ async function seedDsaFn(prisma) {
       companyTagsJson: p.companyTags && p.companyTags.length ? JSON.stringify(p.companyTags) : null,
       hintsJson: p.hints && p.hints.length ? JSON.stringify(p.hints) : null,
       sourceUrl: null,
-      attribution: 'Original problem authored for the Hirewave DSA bank.',
+      attribution: p.attribution || 'Original problem authored for the Hirewave DSA bank.',
       status: 'published',
     };
 

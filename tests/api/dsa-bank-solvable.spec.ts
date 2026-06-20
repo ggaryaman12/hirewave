@@ -39,8 +39,9 @@ test.describe('DSA bank solvability (JS reference, full suites)', () => {
     type FnProblem = { slug: string; reference: (...args: unknown[]) => unknown };
     const core = (await import('../../scripts/dsa/problems.mjs')) as { PROBLEMS: FnProblem[] };
     const rw = (await import('../../scripts/dsa/realworld-problems.mjs')) as { RW_FUNCTION_PROBLEMS: FnProblem[] };
+    const conv = (await import('../../scripts/dsa/converted-problems.mjs')) as { CONVERTED_PROBLEMS: FnProblem[] };
     references = Object.fromEntries(
-      [...core.PROBLEMS, ...rw.RW_FUNCTION_PROBLEMS].map((p) => [p.slug, p.reference]),
+      [...core.PROBLEMS, ...rw.RW_FUNCTION_PROBLEMS, ...conv.CONVERTED_PROBLEMS].map((p) => [p.slug, p.reference]),
     );
   });
 

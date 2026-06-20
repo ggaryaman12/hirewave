@@ -13,6 +13,7 @@ import { dirname, join } from 'path';
 import { fileURLToPath } from 'url';
 import { PROBLEMS, TRACKS } from './problems.mjs';
 import { RW_DESIGN_PROBLEMS, RW_FUNCTION_PROBLEMS, RW_TRACKS } from './realworld-problems.mjs';
+import { CONVERTED_PROBLEMS } from './converted-problems.mjs';
 import { buildStdin, rng, seedFromString, serializeReturn } from './lib/serialize.mjs';
 
 const HERE = dirname(fileURLToPath(import.meta.url));
@@ -144,6 +145,7 @@ function baseRecord(problem, extra) {
     floatEpsilon: problem.floatEpsilon ?? null,
     timeLimitMs: problem.timeLimitMs ?? 2000,
     memoryLimitMb: problem.memoryLimitMb ?? 256,
+    attribution: problem.attribution ?? null,
     categoryTags: problem.categoryTags ?? [],
     companyTags: problem.companyTags ?? [],
     hints: problem.hints ?? [],
@@ -157,6 +159,7 @@ function main() {
   const all = [
     ...PROBLEMS.map((p) => ({ p, build: buildFunctionProblem })),
     ...RW_FUNCTION_PROBLEMS.map((p) => ({ p, build: buildFunctionProblem })),
+    ...CONVERTED_PROBLEMS.map((p) => ({ p, build: buildFunctionProblem })),
     ...RW_DESIGN_PROBLEMS.map((p) => ({ p, build: buildDesignProblem })),
   ];
 

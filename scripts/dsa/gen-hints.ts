@@ -53,6 +53,9 @@ function extractHints(text: string): string[] {
   return parsed.filter((x): x is string => typeof x === 'string').map((s) => s.trim()).filter(Boolean).slice(0, 3);
 }
 
+const MAX_ATTEMPTS = Number(process.env.AI_HINTS_MAX_ATTEMPTS || 5);
+const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
+
 async function withTimeout(p: (signal: AbortSignal) => Promise<Response>): Promise<Response> {
   const ctrl = new AbortController();
   const timer = setTimeout(() => ctrl.abort(), TIMEOUT_MS);
@@ -63,6 +66,23 @@ async function withTimeout(p: (signal: AbortSignal) => Promise<Response>): Promi
   }
 }
 
+// Retries on HTTP 429 / 5xx with exponential backoff + jitter. Honors a
+// Retry-After header when present (common on 429).
+async function requestWithRetry(send: (signal: AbortSignal) => Promise<Response>): Promise<Response> {
+  let last: Response | null = null;
+  for (let attempt = 0; attempt < MAX_ATTEMPTS; attempt += 1) {
+    if (attempt > 0) {
+      const retryAfter = last?.headers.get('retry-after');
+      const wait = retryAfter ? Number(retryAfter) * 1000 : Math.min(15000, 800 * 2 ** (attempt - 1)) + Math.floor(Math.random() * 400);
+      await sleep(wait);
+    }
+    const res = await withTimeout(send);
+    if (res.status !== 429 && res.status < 500) return res;
+    last = res;
+  }
+  return last as Response;
+}
+
 // ---- openai-compatible (NVIDIA Build / OpenAI / any /chat/completions) ----
 async function callOpenAiCompatible(statement: string): Promise<string[]> {
   const baseUrl = (process.env.AI_BASE_URL || process.env.OPENAI_BASE_URL || '').replace(/\/+$/, '');
@@ -70,7 +90,7 @@ async function callOpenAiCompatible(statement: string): Promise<string[]> {
   const model = process.env.AI_MODEL || 'meta/llama-3.1-8b-instruct';
   if (!baseUrl || !apiKey) throw new Error('AI_BASE_URL / AI_API_KEY not set');
 
-  const res = await withTimeout((signal) =>
+  const res = await requestWithRetry((signal) =>
     fetch(`${baseUrl}/chat/completions`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${apiKey}` },
@@ -94,7 +114,7 @@ async function callOllama(statement: string): Promise<string[]> {
   const model = process.env.OLLAMA_MODEL || process.env.OLLAMA_GENERATE_MODEL || '';
   if (!baseUrl || !model) throw new Error('OLLAMA_BASE_URL / OLLAMA_MODEL not set');
 
-  const res = await withTimeout((signal) =>
+  const res = await requestWithRetry((signal) =>
     fetch(`${baseUrl}/api/chat`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -133,6 +153,7 @@ async function main() {
   const status = statusIdx >= 0 ? args[statusIdx + 1] : undefined;
   const slugIdx = args.indexOf('--slug');
   const slug = slugIdx >= 0 ? args[slugIdx + 1] : undefined;
+  const delayMs = args.includes('--delay') ? Number(args[args.indexOf('--delay') + 1]) : 600;
   const mode = resolveMode(args);
 
   const problems = await prisma.dsaProblem.findMany({
@@ -159,6 +180,7 @@ async function main() {
     } catch (err) {
       console.warn(`  skip ${p.slug} [${provider}]: ${err instanceof Error ? err.message : err}`);
     }
+    if (delayMs > 0 && idx < problems.length - 1) await sleep(delayMs);
   }
   console.log(`Done. Added hints to ${done}/${problems.length} problems.`);
   await prisma.$disconnect();
