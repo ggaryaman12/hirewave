@@ -6,7 +6,7 @@ import Link from 'next/link';
 import { ArrowLeft, Building2, Clock, Cpu, Lightbulb, Play, RotateCcw, Send, Tag } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useDraftAutosave } from './use-draft-autosave';
-import type { Language, Verdict } from '@/lib/constants';
+import { Language, Verdict } from '@/lib/constants';
 
 // Monaco is browser-only — load it client-side without SSR.
 const MonacoEditor = dynamic(() => import('@monaco-editor/react').then((m) => m.default), {
@@ -36,15 +36,15 @@ export type ProblemPayload = {
 };
 
 const LANGUAGES: { value: Language; label: string }[] = [
-  { value: 'cpp', label: 'C++' },
-  { value: 'java', label: 'Java' },
-  { value: 'javascript', label: 'JavaScript' },
+  { value: Language.CPP, label: 'C++' },
+  { value: Language.JAVA, label: 'Java' },
+  { value: Language.JAVASCRIPT, label: 'JavaScript' },
 ];
 
 const MONACO_LANGUAGE: Record<Language, string> = {
-  cpp: 'cpp',
-  java: 'java',
-  javascript: 'javascript',
+  [Language.CPP]: Language.CPP,
+  [Language.JAVA]: Language.JAVA,
+  [Language.JAVASCRIPT]: Language.JAVASCRIPT,
 };
 
 // Shape returned by runSamples (samples are public, so input/expected/stdout are present).
@@ -91,9 +91,9 @@ const VERDICT_LABEL: Record<Verdict, string> = {
 };
 
 function verdictChipClass(verdict: Verdict) {
-  if (verdict === 'accepted') return 'bg-emerald-500/15 text-emerald-200';
-  if (verdict === 'tle' || verdict === 'mle') return 'bg-amber-500/15 text-amber-200';
-  if (verdict === 'judging') return 'bg-white/10 text-white/60';
+  if (verdict === Verdict.ACCEPTED) return 'bg-emerald-500/15 text-emerald-200';
+  if (verdict === Verdict.TLE || verdict === Verdict.MLE) return 'bg-amber-500/15 text-amber-200';
+  if (verdict === Verdict.JUDGING) return 'bg-white/10 text-white/60';
   return 'bg-red-500/15 text-red-200';
 }
 
@@ -106,7 +106,7 @@ function difficultyChipClass(difficulty: string) {
 }
 
 export function ProblemWorkspace({ slug, problem }: { slug: string; problem: ProblemPayload }) {
-  const [language, setLanguage] = useState<Language>('cpp');
+  const [language, setLanguage] = useState<Language>(Language.CPP);
   // One source buffer per language, each seeded from its boilerplate. Switching
   // languages preserves whatever the candidate has typed in the other buffers.
   const [sources, setSources] = useState<Record<Language, string>>(() => ({ ...problem.boilerplates }));
@@ -454,7 +454,7 @@ function RunResultsView({ data }: { data: RunResponse }) {
           <div className="mt-2 grid gap-2">
             <IoBlock label="Input" value={result.input} />
             <IoBlock label="Expected" value={result.expected} />
-            <IoBlock label="Your output" value={result.stdout} tone={result.status === 'accepted' ? 'ok' : 'bad'} />
+            <IoBlock label="Your output" value={result.stdout} tone={result.status === Verdict.ACCEPTED ? 'ok' : 'bad'} />
             {result.stderr.trim() && <IoBlock label="Stderr" value={result.stderr} tone="bad" />}
           </div>
         </div>
@@ -465,7 +465,7 @@ function RunResultsView({ data }: { data: RunResponse }) {
 
 function SubmitResultView({ data }: { data: SubmitResponse }) {
   // Compile errors aren't a per-test outcome — show them once, upfront.
-  if (data.verdict === 'compile_error') {
+  if (data.verdict === Verdict.COMPILE_ERROR) {
     return <CompileErrorBanner stderr={data.message || 'Compilation failed.'} />;
   }
   return (
