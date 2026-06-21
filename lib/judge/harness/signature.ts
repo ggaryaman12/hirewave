@@ -2,6 +2,9 @@
 // function body; a hidden per-language driver parses typed inputs from stdin,
 // calls the function, and prints the return value in a canonical form.
 
+import type { Language } from '@/lib/constants';
+import { LANGUAGE_LIST } from '@/lib/languages';
+
 export type ParamType =
   | 'int'
   | 'long'
@@ -23,15 +26,16 @@ export type Signature = {
   returnType: ParamType;
 };
 
-export type HarnessLanguage = 'cpp' | 'java' | 'javascript';
+// First-class harness languages ARE the Language registry. Aliasing to Language
+// makes every Record<HarnessLanguage, …> exhaustiveness-checked: add a language
+// to the union and the compiler flags each dispatch map that's missing it.
+export type HarnessLanguage = Language;
 
-export const SUPPORTED_LANGUAGES: HarnessLanguage[] = ['cpp', 'java', 'javascript'];
+export const SUPPORTED_LANGUAGES: HarnessLanguage[] = LANGUAGE_LIST.map((def) => def.id);
 
-export const LANGUAGE_LABELS: Record<HarnessLanguage, string> = {
-  cpp: 'C++',
-  java: 'Java',
-  javascript: 'JavaScript',
-};
+export const LANGUAGE_LABELS = Object.fromEntries(
+  LANGUAGE_LIST.map((def) => [def.id, def.label]),
+) as Record<HarnessLanguage, string>;
 
 export function parseSignature(json: string | null | undefined): Signature | null {
   if (!json) return null;
