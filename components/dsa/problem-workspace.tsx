@@ -417,6 +417,9 @@ export function ProblemWorkspace({ slug, problem, authed }: { slug: string; prob
               runResults && <RunResultsView data={runResults} />
             )}
             {submitResult && <SubmitResultView data={submitResult} />}
+            {submitResult && submitResult.verdict === Verdict.ACCEPTED && problem.functionMode && (
+              <ComplexitySection slug={slug} submissionId={submitResult.submissionId} />
+            )}
           </div>
         </section>
       </div>
@@ -471,6 +474,87 @@ function RunResultsView({ data }: { data: RunResponse }) {
           </div>
         </div>
       ))}
+    </div>
+  );
+}
+
+type ComplexityResponse =
+  | { supported: false; reason: string }
+  | { supported: true; time: string; space: string; timeConfidence: number; spaceConfidence: number; samples: { n: number }[] };
+
+function confidenceLabel(c: number): { text: string; cls: string } {
+  if (c >= 0.9) return { text: 'high confidence', cls: 'text-emerald-300' };
+  if (c >= 0.6) return { text: 'medium confidence', cls: 'text-amber-300' };
+  return { text: 'low confidence', cls: 'text-red-300' };
+}
+
+function ComplexitySection({ slug, submissionId }: { slug: string; submissionId: string }) {
+  const [state, setState] = useState<'idle' | 'loading' | 'done' | 'error' | 'unsupported'>('idle');
+  const [data, setData] = useState<Extract<ComplexityResponse, { supported: true }> | null>(null);
+  const [reason, setReason] = useState('');
+
+  async function analyze() {
+    setState('loading');
+    try {
+      const res = await fetch(`/api/dsa/problems/${slug}/complexity`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ submissionId }),
+      });
+      const body = (await res.json()) as ComplexityResponse;
+      if (!res.ok) return setState('error');
+      if (!body.supported) {
+        setReason(body.reason);
+        return setState('unsupported');
+      }
+      setData(body);
+      setState('done');
+    } catch {
+      setState('error');
+    }
+  }
+
+  return (
+    <div className="mt-3 rounded-md border border-white/10 bg-white/[0.02] p-3">
+      <div className="flex items-center justify-between">
+        <p className="flex items-center gap-2 text-xs font-black uppercase tracking-[0.14em] text-white/55">
+          <Cpu className="h-3.5 w-3.5" /> Complexity
+        </p>
+        {state === 'idle' && (
+          <button
+            type="button"
+            onClick={analyze}
+            className="rounded-md border border-white/10 px-3 py-1 text-xs font-bold text-white/75 hover:bg-white/10"
+          >
+            Analyze
+          </button>
+        )}
+        {state === 'loading' && <span className="text-xs text-white/45">Measuring on growing inputs…</span>}
+      </div>
+
+      {state === 'done' && data && (
+        <div className="mt-3 grid grid-cols-2 gap-3">
+          {([
+            ['Time', data.time, data.timeConfidence],
+            ['Space', data.space, data.spaceConfidence],
+          ] as const).map(([label, value, conf]) => {
+            const c = confidenceLabel(conf);
+            return (
+              <div key={label} className="rounded-md border border-white/10 bg-black/30 px-3 py-2">
+                <p className="text-[10px] font-bold uppercase tracking-wider text-white/40">{label}</p>
+                <p className="font-mono text-lg font-black">{value}</p>
+                <p className={cn('text-[10px] font-semibold', c.cls)}>{c.text}</p>
+              </div>
+            );
+          })}
+          <p className="col-span-2 text-[11px] text-white/40">
+            Measured by running your code on inputs of {data.samples.length} growing sizes — not estimated. Fast linear
+            scans can read as O(1) at small sizes.
+          </p>
+        </div>
+      )}
+      {state === 'unsupported' && <p className="mt-2 text-xs text-white/45">{reason}</p>}
+      {state === 'error' && <p className="mt-2 text-xs text-red-300">Couldn&apos;t measure complexity. Try again.</p>}
     </div>
   );
 }

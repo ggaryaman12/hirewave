@@ -403,6 +403,8 @@ model DsaSubmission {
   failingCase Int?
   message     String?
   resultsJson String?
+  // Cached complexity analysis (time/space Big-O + reasoning) for this code.
+  complexityJson String?
   createdAt   DateTime   @default(now())
   problem     DsaProblem @relation(fields: [problemId], references: [id], onDelete: Cascade)
   user        User?      @relation(fields: [userId], references: [id], onDelete: SetNull)
