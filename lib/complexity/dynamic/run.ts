@@ -29,7 +29,7 @@ export function runInstrumented(code: string, stdin: string, timeoutMs = DEFAULT
     if (!line) return { ...emptyTelemetry(), ok: false };
     const parsed = JSON.parse(line.slice(6)) as Omit<Telemetry, 'ok'>;
     const opCeiling = (res.stderr || '').includes('__CX_OP_CEILING__');
-    return { ...parsed, ok: !timedOut && !opCeiling && res.status === 0 ? true : !timedOut && !!parsed.ops };
+    return { ...parsed, ok: !timedOut && !opCeiling && res.status === 0 };
   } catch {
     return emptyTelemetry();
   } finally {
