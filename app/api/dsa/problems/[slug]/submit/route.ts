@@ -2,9 +2,10 @@ import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
 import { auth } from '@/auth';
 import { submitSolution } from '@/lib/judge/submit';
+import { LANGUAGES } from '@/lib/constants';
 
 const schema = z.object({
-  language: z.enum(['cpp', 'java', 'javascript']),
+  language: z.enum(LANGUAGES),
   source: z.string().min(1).max(200_000),
   sessionId: z.string().optional(),
   // Client-generated UUID per Submit click; a network retry of the same click

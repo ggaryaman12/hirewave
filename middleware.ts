@@ -1,5 +1,6 @@
 import NextAuth from 'next-auth';
 import { authConfig } from '@/auth.config';
+import { UserRole } from '@/lib/constants';
 
 // Edge middleware uses ONLY the edge-safe config (no Prisma/bcrypt). It reads the
 // JWT to gate protected areas and keep the two verticals separate.
@@ -20,7 +21,7 @@ export default auth((req) => {
   }
 
   // Students don't have a company dashboard — send them to their profile.
-  if (onDashboard && isAuthed && user?.role === 'student') {
+  if (onDashboard && isAuthed && user?.role === UserRole.STUDENT) {
     return Response.redirect(new URL('/profile', nextUrl));
   }
 

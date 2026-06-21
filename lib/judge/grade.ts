@@ -1,12 +1,6 @@
 import { compareOutput } from '@/lib/judge/compare';
-import type {
-  ComparisonPolicy,
-  GradeResult,
-  JudgeRunFn,
-  JudgeRunStatus,
-  TestCaseResult,
-  Verdict,
-} from '@/lib/judge/types';
+import { JudgeRunStatus, Verdict } from '@/lib/constants';
+import type { ComparisonPolicy, GradeResult, JudgeRunFn, TestCaseResult } from '@/lib/judge/types';
 
 export type GradeProblem = {
   language: string;
@@ -32,18 +26,18 @@ const LANGUAGE_TIME_FACTOR: Record<string, number> = {
 
 function runStatusToVerdict(status: JudgeRunStatus): Verdict {
   switch (status) {
-    case 'tle':
-      return 'tle';
-    case 'mle':
-      return 'mle';
-    case 'runtime_error':
-      return 'runtime_error';
-    case 'compile_error':
-      return 'compile_error';
-    case 'error':
-      return 'error';
+    case JudgeRunStatus.TLE:
+      return Verdict.TLE;
+    case JudgeRunStatus.MLE:
+      return Verdict.MLE;
+    case JudgeRunStatus.RUNTIME_ERROR:
+      return Verdict.RUNTIME_ERROR;
+    case JudgeRunStatus.COMPILE_ERROR:
+      return Verdict.COMPILE_ERROR;
+    case JudgeRunStatus.ERROR:
+      return Verdict.ERROR;
     default:
-      return 'accepted';
+      return Verdict.ACCEPTED;
   }
 }
 
@@ -58,7 +52,7 @@ export async function gradeSubmission(
   const timeLimitMs = Math.round(problem.timeLimitMs * timeFactor);
   const results: TestCaseResult[] = [];
 
-  let verdict: Verdict = 'accepted';
+  let verdict: Verdict = Verdict.ACCEPTED;
   let failingCase: number | null = null;
   let message: string | null = null;
   let passedCount = 0;
@@ -81,17 +75,17 @@ export async function gradeSubmission(
     }
 
     let caseStatus: Verdict;
-    if (runResult.status !== 'ok') {
+    if (runResult.status !== JudgeRunStatus.OK) {
       caseStatus = runStatusToVerdict(runResult.status);
     } else if (compareOutput(testCase.expected, runResult.stdout, problem.comparison, problem.floatEpsilon ?? undefined)) {
-      caseStatus = 'accepted';
+      caseStatus = Verdict.ACCEPTED;
     } else {
-      caseStatus = 'wrong_answer';
+      caseStatus = Verdict.WRONG_ANSWER;
     }
 
     results.push({ index, status: caseStatus, runtimeMs: runResult.runtimeMs, memoryKb: runResult.memoryKb });
 
-    if (caseStatus === 'accepted') {
+    if (caseStatus === Verdict.ACCEPTED) {
       passedCount += 1;
       continue;
     }
@@ -99,13 +93,13 @@ export async function gradeSubmission(
     // First failure decides the verdict; compile errors short-circuit immediately.
     verdict = caseStatus;
     failingCase = index;
-    message = caseStatus === 'compile_error' && runResult.stderr ? runResult.stderr.slice(0, 2000) : null;
-    if (caseStatus === 'compile_error') break;
+    message = caseStatus === Verdict.COMPILE_ERROR && runResult.stderr ? runResult.stderr.slice(0, 2000) : null;
+    if (caseStatus === Verdict.COMPILE_ERROR) break;
     break;
   }
 
   return {
-    verdict: testCases.length === 0 ? 'error' : verdict,
+    verdict: testCases.length === 0 ? Verdict.ERROR : verdict,
     passedCount,
     totalCount: testCases.length,
     runtimeMs: maxRuntimeMs,

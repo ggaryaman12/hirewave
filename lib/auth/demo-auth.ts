@@ -3,6 +3,7 @@ import bcrypt from 'bcryptjs';
 import { auth } from '@/auth';
 import { db } from '@/lib/db';
 import { ensureDemoWorkspace } from '@/lib/demo-challenge';
+import { UserRole } from '@/lib/constants';
 
 const DEMO_EMAIL = (process.env.DEMO_RECRUITER_EMAIL || 'founder@hirewave.local').toLowerCase();
 const DEMO_PASSWORD = process.env.DEMO_RECRUITER_PASSWORD || 'demo-password-123';
@@ -17,10 +18,10 @@ export async function ensureDemoRecruiter() {
   let user = await db.user.findUnique({ where: { email: DEMO_EMAIL } });
   if (!user) {
     const passwordHash = await bcrypt.hash(DEMO_PASSWORD, 10);
-    user = await db.user.create({ data: { name: 'Demo Founder', email: DEMO_EMAIL, passwordHash, role: 'recruiter' } });
-  } else if (!user.passwordHash || user.role !== 'recruiter') {
+    user = await db.user.create({ data: { name: 'Demo Founder', email: DEMO_EMAIL, passwordHash, role: UserRole.RECRUITER } });
+  } else if (!user.passwordHash || user.role !== UserRole.RECRUITER) {
     const passwordHash = user.passwordHash ?? (await bcrypt.hash(DEMO_PASSWORD, 10));
-    user = await db.user.update({ where: { id: user.id }, data: { passwordHash, role: 'recruiter' } });
+    user = await db.user.update({ where: { id: user.id }, data: { passwordHash, role: UserRole.RECRUITER } });
   }
   await ensureDemoWorkspace(user.id);
   return user;

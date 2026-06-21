@@ -1,8 +1,11 @@
 import bcrypt from 'bcryptjs';
 import { db } from '@/lib/db';
+import { UserRole } from '@/lib/constants';
 import { createWorkspaceForOwner } from '@/lib/workspace';
 
-export type RegisterRole = 'student' | 'recruiter';
+// Self-serve signup creates a student or a recruiter (admins are provisioned
+// elsewhere), so the role here is a subset of UserRole.
+export type RegisterRole = typeof UserRole.STUDENT | typeof UserRole.RECRUITER;
 
 // Creates an account. A recruiter additionally gets their own workspace (with an
 // owner membership) so they land in a usable dashboard immediately — the missing
@@ -20,7 +23,7 @@ export async function registerUser(input: {
     data: { name: input.name, email, passwordHash, role: input.role },
   });
 
-  if (input.role === 'recruiter') {
+  if (input.role === UserRole.RECRUITER) {
     const workspaceName = (input.company?.trim() || `${input.name}'s Workspace`).slice(0, 80);
     await createWorkspaceForOwner({ userId: user.id, name: workspaceName });
   }

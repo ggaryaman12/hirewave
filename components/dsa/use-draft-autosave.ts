@@ -1,4 +1,5 @@
 import { useEffect, useRef } from 'react';
+import type { Language } from '@/lib/constants';
 
 // Local-first write-behind autosave for the DSA editor.
 //   - localStorage (debounced ~500ms): instant, free, survives reload + offline.
@@ -7,8 +8,6 @@ import { useEffect, useRef } from 'react';
 //     fetch would be cancelled).
 // On mount it recovers the newest of {local, server} per (slug, language) and
 // hands it back via onRecover; the caller applies it only to a pristine buffer.
-
-type Lang = 'cpp' | 'java' | 'javascript';
 
 const LOCAL_DEBOUNCE_MS = 500;
 const SERVER_DEBOUNCE_MS = 5000;
@@ -26,9 +25,9 @@ function safeParse(raw: string): { source: string; t: number } | null {
 
 export function useDraftAutosave(params: {
   slug: string;
-  language: Lang;
+  language: Language;
   source: string;
-  onRecover: (language: Lang, source: string) => void;
+  onRecover: (language: Language, source: string) => void;
 }) {
   const { slug, language, source } = params;
 

@@ -1,9 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
 import { runSamples } from '@/lib/judge/submit';
+import { LANGUAGES } from '@/lib/constants';
 
 const schema = z.object({
-  language: z.enum(['cpp', 'java', 'javascript']),
+  language: z.enum(LANGUAGES),
   source: z.string().min(1).max(200_000),
 });
 

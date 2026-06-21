@@ -3,8 +3,7 @@ import { z } from 'zod';
 import { auth } from '@/auth';
 import { db } from '@/lib/db';
 import { getDraft, saveDraft } from '@/lib/dsa/draft';
-
-const LANGUAGES = ['cpp', 'java', 'javascript'] as const;
+import { LANGUAGES } from '@/lib/constants';
 
 const saveSchema = z.object({
   language: z.enum(LANGUAGES),

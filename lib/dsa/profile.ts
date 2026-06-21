@@ -1,4 +1,5 @@
 import { db } from '@/lib/db';
+import { ProblemStatus, ProgressStatus } from '@/lib/constants';
 
 export type DifficultyStat = { solved: number; total: number };
 export type TopicStat = { topicId: string; title: string; track: string; solved: number; total: number };
@@ -62,9 +63,9 @@ export async function getProfileStats(userId: string): Promise<ProfileStats> {
         where: { userId },
         select: { status: true, problem: { select: { difficulty: true, topicId: true } } },
       }),
-      db.dsaProblem.groupBy({ by: ['difficulty'], where: { status: 'published' }, _count: { _all: true } }),
-      db.dsaProblem.groupBy({ by: ['topicId'], where: { status: 'published' }, _count: { _all: true } }),
-      db.dsaProblem.count({ where: { status: 'published' } }),
+      db.dsaProblem.groupBy({ by: ['difficulty'], where: { status: ProblemStatus.PUBLISHED }, _count: { _all: true } }),
+      db.dsaProblem.groupBy({ by: ['topicId'], where: { status: ProblemStatus.PUBLISHED }, _count: { _all: true } }),
+      db.dsaProblem.count({ where: { status: ProblemStatus.PUBLISHED } }),
       db.dsaTopic.findMany({ select: { id: true, title: true, track: { select: { title: true } } } }),
       db.dsaSubmission.findMany({ where: { userId }, select: { verdict: true, language: true, createdAt: true } }),
       db.dsaSubmission.findMany({
@@ -73,11 +74,11 @@ export async function getProfileStats(userId: string): Promise<ProfileStats> {
         take: 12,
         select: { id: true, verdict: true, language: true, createdAt: true, problem: { select: { title: true, slug: true, difficulty: true } } },
       }),
-      db.dsaProblemProgress.groupBy({ by: ['userId'], where: { status: 'solved' }, _count: { _all: true } }),
+      db.dsaProblemProgress.groupBy({ by: ['userId'], where: { status: ProgressStatus.SOLVED }, _count: { _all: true } }),
     ]);
 
-  const solved = progress.filter((p) => p.status === 'solved');
-  const tried = progress.filter((p) => p.status === 'attempted').length;
+  const solved = progress.filter((p) => p.status === ProgressStatus.SOLVED);
+  const tried = progress.filter((p) => p.status === ProgressStatus.ATTEMPTED).length;
 
   // By difficulty.
   const diffTotals: Record<string, number> = {};

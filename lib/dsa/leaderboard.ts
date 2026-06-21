@@ -1,4 +1,5 @@
 import { db } from '@/lib/db';
+import { Difficulty, ProgressStatus } from '@/lib/constants';
 
 // DSA leaderboard. Score = difficulty-weighted sum over a user's SOLVED problems
 // (easy 1 / medium 2 / hard 3). Phase-0 simple aggregation in app code — fine at
@@ -13,7 +14,11 @@ export type LeaderboardEntry = {
   rank: number;
 };
 
-const WEIGHTS: Record<string, number> = { easy: 1, medium: 2, hard: 3 };
+const WEIGHTS: Record<string, number> = {
+  [Difficulty.EASY]: 1,
+  [Difficulty.MEDIUM]: 2,
+  [Difficulty.HARD]: 3,
+};
 
 export function difficultyWeight(difficulty: string): number {
   return WEIGHTS[difficulty.toLowerCase()] ?? 2; // unknown difficulty treated as medium
@@ -23,7 +28,7 @@ export async function getLeaderboard(options?: { limit?: number; currentUserId?:
   const limit = options?.limit ?? 50;
 
   const solved = await db.dsaProblemProgress.findMany({
-    where: { status: 'solved' },
+    where: { status: ProgressStatus.SOLVED },
     select: {
       userId: true,
       user: { select: { name: true } },

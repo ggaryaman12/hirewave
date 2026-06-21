@@ -1,5 +1,6 @@
 import { db } from '@/lib/db';
 import { toJson } from '@/lib/json';
+import { WorkspaceRole } from '@/lib/constants';
 
 export const DEFAULT_RUBRIC = [
   'Problem Decomposition',
@@ -178,7 +179,7 @@ export async function ensureDemoWorkspace(userId: string) {
     create: {
       workspaceId: workspace.id,
       userId,
-      role: 'owner',
+      role: WorkspaceRole.OWNER,
     },
   });
 

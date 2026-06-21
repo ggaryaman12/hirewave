@@ -3,12 +3,13 @@ import { z } from 'zod';
 import { db } from '@/lib/db';
 import { checkRateLimit } from '@/lib/auth/rate-limit';
 import { registerUser } from '@/lib/auth/register';
+import { UserRole } from '@/lib/constants';
 
 const schema = z.object({
   name: z.string().trim().min(1).max(80),
   email: z.string().email().max(200),
   password: z.string().min(8).max(200),
-  role: z.enum(['student', 'recruiter']).default('student'),
+  role: z.enum([UserRole.STUDENT, UserRole.RECRUITER]).default(UserRole.STUDENT),
   company: z.string().trim().max(80).optional(),
 });
 

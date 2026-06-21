@@ -6,6 +6,7 @@ import Link from 'next/link';
 import { ArrowLeft, Building2, Clock, Cpu, Lightbulb, Play, RotateCcw, Send, Tag } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useDraftAutosave } from './use-draft-autosave';
+import type { Language, Verdict } from '@/lib/constants';
 
 // Monaco is browser-only — load it client-side without SSR.
 const MonacoEditor = dynamic(() => import('@monaco-editor/react').then((m) => m.default), {
@@ -14,8 +15,6 @@ const MonacoEditor = dynamic(() => import('@monaco-editor/react').then((m) => m.
 });
 
 export type ProblemSample = { input: string; expected: string };
-
-type Language = 'cpp' | 'java' | 'javascript';
 
 export type ProblemPayload = {
   title: string;
@@ -47,17 +46,6 @@ const MONACO_LANGUAGE: Record<Language, string> = {
   java: 'java',
   javascript: 'javascript',
 };
-
-// Mirrors lib/judge/types Verdict.
-type Verdict =
-  | 'accepted'
-  | 'wrong_answer'
-  | 'tle'
-  | 'mle'
-  | 'runtime_error'
-  | 'compile_error'
-  | 'error'
-  | 'judging';
 
 // Shape returned by runSamples (samples are public, so input/expected/stdout are present).
 type RunResult = {

@@ -6,7 +6,8 @@ import { gradeSubmission } from '@/lib/judge/grade';
 import { getJudgeProvider } from '@/lib/judge/provider';
 import { parseSignature, wrapSource } from '@/lib/judge/harness';
 import { parseDesignSpec, wrapDesignSource } from '@/lib/judge/harness/design';
-import type { ComparisonPolicy, JudgeRunFn, Verdict } from '@/lib/judge/types';
+import { JudgeRunStatus, ProgressStatus, SubmissionStatus, Verdict } from '@/lib/constants';
+import type { ComparisonPolicy, JudgeRunFn } from '@/lib/judge/types';
 
 type WrapInput = { signatureJson: string | null; designSpecJson: string | null };
 
@@ -113,7 +114,7 @@ export async function submitSolution(input: {
         userId: input.userId,
         language: input.language,
         source: input.source,
-        status: 'running',
+        status: SubmissionStatus.RUNNING,
         idempotencyKey: input.idempotencyKey ?? null,
       },
     });
@@ -158,7 +159,7 @@ async function judgeSubmission(
     );
   } catch (err) {
     // Infra failure (NOT a verdict) -> mark error and surface upstream.
-    await db.dsaSubmission.update({ where: { id: submissionId }, data: { status: 'error' } });
+    await db.dsaSubmission.update({ where: { id: submissionId }, data: { status: SubmissionStatus.ERROR } });
     log('judge.error', {
       cid,
       submissionId,
@@ -172,7 +173,7 @@ async function judgeSubmission(
   await db.dsaSubmission.update({
     where: { id: submissionId },
     data: {
-      status: 'done',
+      status: SubmissionStatus.DONE,
       verdict: grade.verdict,
       passedCount: grade.passedCount,
       totalCount: grade.totalCount,
@@ -197,23 +198,23 @@ async function judgeSubmission(
   // tracking failure break judging. Never downgrade a solved problem.
   if (input.userId) {
     try {
-      const accepted = grade.verdict === 'accepted';
+      const accepted = grade.verdict === Verdict.ACCEPTED;
       const existing = await db.dsaProblemProgress.findUnique({
         where: { userId_problemId: { userId: input.userId, problemId: problem.id } },
       });
-      const solved = accepted || existing?.status === 'solved';
+      const solved = accepted || existing?.status === ProgressStatus.SOLVED;
       await db.dsaProblemProgress.upsert({
         where: { userId_problemId: { userId: input.userId, problemId: problem.id } },
         create: {
           userId: input.userId,
           problemId: problem.id,
           attempts: 1,
-          status: accepted ? 'solved' : 'attempted',
+          status: accepted ? ProgressStatus.SOLVED : ProgressStatus.ATTEMPTED,
           solvedAt: accepted ? new Date() : null,
         },
         update: {
           attempts: { increment: 1 },
-          status: solved ? 'solved' : 'attempted',
+          status: solved ? ProgressStatus.SOLVED : ProgressStatus.ATTEMPTED,
           solvedAt: existing?.solvedAt ?? (accepted ? new Date() : null),
         },
       });
@@ -265,15 +266,15 @@ export async function runSamples(input: {
 
     // A compile error is a property of the SOURCE, not of any single test case —
     // surface it once, upfront, and stop (don't repeat it per sample).
-    if (runResult.status === 'compile_error') {
+    if (runResult.status === JudgeRunStatus.COMPILE_ERROR) {
       return { sampleCount: samples.length, compileError: cleanCompilerOutput(runResult.stderr).slice(0, 4000), results: [] };
     }
 
     const passed =
-      runResult.status === 'ok' && compareOutput(sample.expected, runResult.stdout, comparison, problem.floatEpsilon ?? undefined);
-    const status: Verdict = runResult.status !== 'ok'
-      ? (runResult.status === 'tle' ? 'tle' : runResult.status === 'runtime_error' ? 'runtime_error' : 'error')
-      : passed ? 'accepted' : 'wrong_answer';
+      runResult.status === JudgeRunStatus.OK && compareOutput(sample.expected, runResult.stdout, comparison, problem.floatEpsilon ?? undefined);
+    const status: Verdict = runResult.status !== JudgeRunStatus.OK
+      ? (runResult.status === JudgeRunStatus.TLE ? Verdict.TLE : runResult.status === JudgeRunStatus.RUNTIME_ERROR ? Verdict.RUNTIME_ERROR : Verdict.ERROR)
+      : passed ? Verdict.ACCEPTED : Verdict.WRONG_ANSWER;
 
     results.push({
       index,

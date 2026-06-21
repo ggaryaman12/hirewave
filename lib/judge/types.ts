@@ -1,10 +1,8 @@
-export type JudgeRunStatus =
-  | 'ok'
-  | 'tle'
-  | 'mle'
-  | 'runtime_error'
-  | 'compile_error'
-  | 'error';
+import type { ComparisonPolicy, JudgeRunStatus, Verdict } from '@/lib/constants';
+
+// Re-exported from the central constants module so existing importers
+// (`@/lib/judge/types`) keep working while the values live in one place.
+export type { ComparisonPolicy, JudgeRunStatus, Verdict };
 
 export type JudgeRunInput = {
   language: string;
@@ -30,18 +28,6 @@ export interface JudgeProvider {
   id: string;
   run(input: JudgeRunInput): Promise<JudgeRunResult>;
 }
-
-export type ComparisonPolicy = 'exact' | 'whitespace' | 'float';
-
-export type Verdict =
-  | 'accepted'
-  | 'wrong_answer'
-  | 'tle'
-  | 'mle'
-  | 'runtime_error'
-  | 'compile_error'
-  | 'error'
-  | 'judging';
 
 export type TestCaseResult = {
   index: number;

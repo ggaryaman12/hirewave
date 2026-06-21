@@ -1,5 +1,6 @@
 import crypto from 'crypto';
 import { db } from '@/lib/db';
+import { WorkspaceRole } from '@/lib/constants';
 
 // Workspace creation for the hiring vertical. A recruiter owns a workspace; all
 // tenant-scoped data (assessments, candidates, reports) hangs off it. The slug
@@ -21,7 +22,7 @@ export async function createWorkspaceForOwner(input: { userId: string; name: str
   const slug = `${slugifyWorkspaceName(input.name)}-${crypto.randomBytes(3).toString('hex')}`;
   const workspace = await db.workspace.create({ data: { name: input.name, slug } });
   await db.workspaceMember.create({
-    data: { workspaceId: workspace.id, userId: input.userId, role: 'owner' },
+    data: { workspaceId: workspace.id, userId: input.userId, role: WorkspaceRole.OWNER },
   });
   return workspace;
 }
