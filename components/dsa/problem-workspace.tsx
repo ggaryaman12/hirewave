@@ -5,6 +5,7 @@ import dynamic from 'next/dynamic';
 import Link from 'next/link';
 import { ArrowLeft, Building2, Clock, Cpu, Lightbulb, Play, RotateCcw, Send, Tag } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { useDraftAutosave } from './use-draft-autosave';
 
 // Monaco is browser-only — load it client-side without SSR.
 const MonacoEditor = dynamic(() => import('@monaco-editor/react').then((m) => m.default), {
@@ -132,6 +133,13 @@ export function ProblemWorkspace({ slug, problem }: { slug: string; problem: Pro
   const setSource = (value: string) => setSources((prev) => ({ ...prev, [language]: value }));
   const resetBoilerplate = () => setSources((prev) => ({ ...prev, [language]: problem.boilerplates[language] }));
   const pending = running || submitting;
+
+  // Autosave the editor so a reload never loses work. Recovery only overwrites a
+  // buffer that's still pristine boilerplate, so it can't clobber live typing.
+  const applyRecoveredDraft = (lang: Language, recovered: string) => {
+    setSources((prev) => (prev[lang] === problem.boilerplates[lang] ? { ...prev, [lang]: recovered } : prev));
+  };
+  useDraftAutosave({ slug, language, source, onRecover: applyRecoveredDraft });
 
   async function runSamples() {
     if (!source.trim() || pending) return;

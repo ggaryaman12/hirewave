@@ -23,6 +23,7 @@ model User {
   sessions      Session[]
   dsaSubmissions DsaSubmission[]
   dsaProgress   DsaProblemProgress[]
+  dsaDrafts     DsaDraft[]
   studentProfile StudentProfile?
 }
 
@@ -366,6 +367,7 @@ model DsaProblem {
   testCases             DsaTestCase[]
   submissions           DsaSubmission[]
   progress              DsaProblemProgress[]
+  drafts                DsaDraft[]
 }
 
 model DsaTestCase {
@@ -407,6 +409,24 @@ model DsaSubmission {
 
   @@index([problemId, createdAt])
   @@index([userId, createdAt])
+}
+
+// In-progress editor draft so a reload never loses work. One row per
+// (user, problem, language); the client upserts it (last-write-wins) on a
+// debounced timer + a sendBeacon on exit. localStorage is the instant
+// reload-recovery layer; this is the durable, cross-device layer.
+model DsaDraft {
+  id        String     @id @default(cuid())
+  userId    String
+  problemId String
+  language  String
+  source    String
+  updatedAt DateTime   @updatedAt
+  createdAt DateTime   @default(now())
+  user      User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  problem   DsaProblem @relation(fields: [problemId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, problemId, language])
 }
 
 model InviteLink {
