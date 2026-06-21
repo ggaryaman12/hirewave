@@ -1,6 +1,7 @@
 import Link from 'next/link';
 import { ArrowLeft } from 'lucide-react';
 import { db } from '@/lib/db';
+import { getCurrentUser } from '@/lib/auth/session';
 import { boilerplatesFor } from '@/lib/dsa/boilerplate';
 import { ProblemWorkspace, type ProblemPayload } from '@/components/dsa/problem-workspace';
 
@@ -64,5 +65,6 @@ export default async function DsaProblemPage({ params }: { params: { slug: strin
       .map((testCase) => ({ input: testCase.input, expected: testCase.expected })),
   };
 
-  return <ProblemWorkspace slug={problem.slug} problem={payload} />;
+  const currentUser = await getCurrentUser();
+  return <ProblemWorkspace slug={problem.slug} problem={payload} authed={Boolean(currentUser)} />;
 }

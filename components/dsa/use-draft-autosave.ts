@@ -27,11 +27,13 @@ export function useDraftAutosave(params: {
   slug: string;
   language: Language;
   source: string;
+  // Server persistence only runs for signed-in users; anonymous users keep their
+  // draft in localStorage only (an anon server write would just 401).
+  authed: boolean;
   onRecover: (language: Language, source: string) => void;
 }) {
-  const { slug, language, source } = params;
+  const { slug, language, source, authed } = params;
 
-  const recovered = useRef<Set<string>>(new Set());
   const lastServerSource = useRef<string | null>(null);
   const localTimer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
   const serverTimer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
@@ -43,23 +45,26 @@ export function useDraftAutosave(params: {
   const latest = useRef({ slug, language, source });
   latest.current = { slug, language, source };
 
-  // Recover the newest saved draft once per (slug, language).
+  // Recover the newest saved draft on mount / language switch. (No "already
+  // recovered" ref guard: under React StrictMode the first run is cancelled by
+  // its cleanup, so a ref guard would make the second run early-return and the
+  // draft would never be restored. The `cancelled` flag handles real unmounts;
+  // the caller's pristine-buffer check prevents clobbering live edits.)
   useEffect(() => {
-    const key = `${slug}:${language}`;
-    if (recovered.current.has(key)) return;
-    recovered.current.add(key);
-
     let cancelled = false;
     const localRaw = typeof window !== 'undefined' ? window.localStorage.getItem(localKey(slug, language)) : null;
     const local = localRaw ? safeParse(localRaw) : null;
 
     void (async () => {
       let server: { source: string; updatedAt: string } | null = null;
-      try {
-        const res = await fetch(`/api/dsa/problems/${slug}/draft?language=${language}`);
-        if (res.ok) server = (await res.json()).draft;
-      } catch {
-        /* offline -> fall back to localStorage */
+      // Anonymous users have no server draft; skip the fetch entirely.
+      if (authed) {
+        try {
+          const res = await fetch(`/api/dsa/problems/${slug}/draft?language=${language}`);
+          if (res.ok) server = (await res.json()).draft;
+        } catch {
+          /* offline -> fall back to localStorage */
+        }
       }
       if (cancelled) return;
       const localT = local?.t ?? 0;
@@ -72,9 +77,10 @@ export function useDraftAutosave(params: {
     return () => {
       cancelled = true;
     };
-  }, [slug, language]);
+  }, [slug, language, authed]);
 
-  // Debounced save: fast localStorage, slower server (only when content changed).
+  // Debounced save: fast localStorage always; server only for signed-in users
+  // and only when the content actually changed.
   useEffect(() => {
     if (typeof window === 'undefined') return;
 
@@ -84,28 +90,31 @@ export function useDraftAutosave(params: {
     }, LOCAL_DEBOUNCE_MS);
 
     clearTimeout(serverTimer.current);
-    serverTimer.current = setTimeout(() => {
-      if (source === lastServerSource.current) return;
-      lastServerSource.current = source;
-      void fetch(`/api/dsa/problems/${slug}/draft`, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ language, source }),
-      }).catch(() => {
-        lastServerSource.current = null; // allow a retry on the next change
-      });
-    }, SERVER_DEBOUNCE_MS);
+    if (authed) {
+      serverTimer.current = setTimeout(() => {
+        if (source === lastServerSource.current) return;
+        lastServerSource.current = source;
+        void fetch(`/api/dsa/problems/${slug}/draft`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ language, source }),
+        }).catch(() => {
+          lastServerSource.current = null; // allow a retry on the next change
+        });
+      }, SERVER_DEBOUNCE_MS);
+    }
 
     return () => {
       clearTimeout(localTimer.current);
       clearTimeout(serverTimer.current);
     };
-  }, [slug, language, source]);
+  }, [slug, language, source, authed]);
 
-  // Flush on exit — sendBeacon delivers even as the page unloads.
+  // Flush on exit — sendBeacon delivers even as the page unloads (signed-in only).
   useEffect(() => {
     const onHide = () => {
       if (typeof document === 'undefined' || document.visibilityState !== 'hidden') return;
+      if (!authed) return;
       const current = latest.current;
       if (current.source === lastServerSource.current) return;
       const blob = new Blob([JSON.stringify({ language: current.language, source: current.source })], {
@@ -115,5 +124,5 @@ export function useDraftAutosave(params: {
     };
     document.addEventListener('visibilitychange', onHide);
     return () => document.removeEventListener('visibilitychange', onHide);
-  }, []);
+  }, [authed]);
 }

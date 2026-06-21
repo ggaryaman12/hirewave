@@ -105,7 +105,7 @@ function difficultyChipClass(difficulty: string) {
   return 'bg-white/10 text-white/60';
 }
 
-export function ProblemWorkspace({ slug, problem }: { slug: string; problem: ProblemPayload }) {
+export function ProblemWorkspace({ slug, problem, authed }: { slug: string; problem: ProblemPayload; authed: boolean }) {
   const [language, setLanguage] = useState<Language>(Language.CPP);
   // One source buffer per language, each seeded from its boilerplate. Switching
   // languages preserves whatever the candidate has typed in the other buffers.
@@ -127,7 +127,7 @@ export function ProblemWorkspace({ slug, problem }: { slug: string; problem: Pro
   const applyRecoveredDraft = (lang: Language, recovered: string) => {
     setSources((prev) => (prev[lang] === problem.boilerplates[lang] ? { ...prev, [lang]: recovered } : prev));
   };
-  useDraftAutosave({ slug, language, source, onRecover: applyRecoveredDraft });
+  useDraftAutosave({ slug, language, source, authed, onRecover: applyRecoveredDraft });
 
   async function runSamples() {
     if (!source.trim() || pending) return;
