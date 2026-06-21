@@ -1,5 +1,5 @@
 import Link from 'next/link';
-import { ArrowRight, Check, Code2, Layers, CircleDot } from 'lucide-react';
+import { ArrowRight, Check, Code2, Layers, CircleDot, Trophy } from 'lucide-react';
 import { db } from '@/lib/db';
 import { getCurrentUser } from '@/lib/auth/session';
 import { cn } from '@/lib/utils';
@@ -94,6 +94,12 @@ export default async function DsaPage() {
               {visibleTracks.length === 1 ? 'track' : 'tracks'}
             </p>
           </div>
+          <Link
+            href="/dsa/leaderboard"
+            className="inline-flex items-center gap-1.5 rounded-md border border-white/10 px-3 py-1.5 text-xs font-bold text-white/70 hover:bg-white/10 hover:text-white"
+          >
+            <Trophy className="h-3.5 w-3.5 text-[#f15a29]" /> Leaderboard
+          </Link>
         </div>
       </header>
 
