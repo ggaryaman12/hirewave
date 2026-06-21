@@ -1,0 +1,132 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Hirewave System Design — Course Hub</title>
+<link rel="stylesheet" href="style.css">
+<style>
+  a.lesson{display:block;text-decoration:none;color:var(--txt);background:#0b0f14;border:1px solid var(--line);
+    border-radius:10px;padding:14px 16px;margin:8px 0;transition:.15s}
+  a.lesson:hover{border-color:var(--acc);transform:translateX(4px)}
+  a.lesson b{color:var(--acc)}a.lesson .s{color:var(--mut);font-size:13px}
+  .done{color:var(--good);font:12px var(--mono)}
+  .cheat{background:#0b0f14;border-left:3px solid var(--acc);border-radius:6px;padding:12px 14px;margin:10px 0}
+  .cheat .q{color:var(--warn);font-weight:600;font-size:14px}.cheat .a{font-size:14px;margin-top:4px}
+</style>
+</head>
+<body>
+<header>
+  <h1>Hirewave — System Design Course Hub</h1>
+  <p>Running notes · decisions · interview cheat-sheet. Nothing here gets deleted — each lesson appends. 🎓 16 lessons.</p>
+</header>
+<main>
+
+<section>
+  <h2>📚 Lessons (open in order, or jump around)</h2>
+  <a class="lesson" href="01-judge-pipeline.html"><b>01 · Async Judge Pipeline</b> <span class="done">✓</span>
+    <div class="s">Why a queue (spike sim) · pipeline diagram · Submission/TestRun schema · idempotency · fail-fast vs run-all</div></a>
+  <a class="lesson" href="02-queue-design.html"><b>02 · Queue Design &amp; Job Payload</b> <span class="done">✓</span>
+    <div class="s">Thin payload (claim-check) · lifecycle flowchart · at-least-once · error classification · retry/backoff · DLQ</div></a>
+  <a class="lesson" href="03-worker.html"><b>03 · The Worker &amp; Judge0 Client</b> <span class="done">✓</span>
+    <div class="s">Worker loop · guard→claim→load→run→persist→notify · two timeouts · concurrency dial · graceful shutdown</div></a>
+  <a class="lesson" href="04-result-delivery.html"><b>04 · Result Delivery</b> <span class="done">✓</span>
+    <div class="s">Polling vs SSE vs WebSocket · backoff polling · partial vs final results · live demo</div></a>
+  <a class="lesson" href="05-ai-orchestration.html"><b>05 · AI Orchestration</b> <span class="done">✓</span>
+    <div class="s">Provider gateway · task routing · cost meter · prompt versioning · storing AI outputs</div></a>
+  <a class="lesson" href="06-multi-tenancy.html"><b>06 · Multi-tenancy &amp; RBAC</b> <span class="done">✓</span>
+    <div class="s">Row vs schema vs DB-per-tenant · RLS leak demo · scope enforcement · roles &amp; permissions</div></a>
+  <a class="lesson" href="07-profiles-leaderboards.html"><b>07 · Profiles, Metrics &amp; Leaderboards</b> <span class="done">✓</span>
+    <div class="s">Compute on read vs write · outbox pattern · Redis sorted-set leaderboard · offline percentile</div></a>
+  <a class="lesson" href="08-db-strategy.html"><b>08 · DB Strategy &amp; Migration</b> <span class="done">✓</span>
+    <div class="s">SQLite→Postgres dual-write path · caching &amp; invalidation · read replicas · sharding</div></a>
+  <a class="lesson" href="09-observability.html"><b>09 · Observability</b> <span class="done">✓</span>
+    <div class="s">Logs/metrics/traces · correlation IDs · metrics that matter · RED &amp; USE</div></a>
+  <a class="lesson" href="10-security-ratelimit.html"><b>10 · Security &amp; Rate Limiting</b> <span class="done">✓</span>
+    <div class="s">Threat model · authN vs authZ · rate-limit layers · token bucket demo</div></a>
+  <a class="lesson" href="11-reliability.html"><b>11 · Reliability &amp; Graceful Degradation</b> <span class="done">✓</span>
+    <div class="s">Circuit breaker (live states) · degradation matrix · queue as reliability buffer · timeout/retry/idempotency trio</div></a>
+  <a class="lesson" href="12-scaling-roadmap.html"><b>12 · Scaling Roadmap (capstone)</b> <span class="done">✓</span>
+    <div class="s">Phase 1→3 · whole system on one page · bottleneck→risk · the 60-second pitch</div></a>
+  <a class="lesson" href="13-build-plan.html"><b>13 · Phase 0 Build Plan</b> <span class="done">✓ live checklist</span>
+    <div class="s">Decision: seed both verticals + all Bucket A first · idempotency/seam/logging tasks · Phase 1 trigger thresholds</div></a>
+  <a class="lesson" href="14-autosave.html"><b>14 · Autosave &amp; Draft Persistence</b> <span class="done">✓</span>
+    <div class="s">Local-first write-behind · 3 tiers · debounce + sendBeacon · DsaDraft vs FileSnapshot · last-write-wins · live demo</div></a>
+  <a class="lesson" href="15-complexity-analyzer-hld.html"><b>15 · Complexity Analyzer (HLD)</b> <span class="done">✓</span>
+    <div class="s">Undecidability truth · measure-don't-read · two-phase response · sandbox reuse · dedicated worker pool · code-hash cache</div></a>
+  <a class="lesson" href="16-complexity-analyzer-lld.html"><b>16 · Complexity Analyzer (LLD)</b> <span class="done">✓</span>
+    <div class="s">tree-sitter AST · cost algebra (max/×/Master theorem) · instrumentation · curve-fit + ratio test · simulation steps · Monaco overlays</div></a>
+</section>
+
+<section>
+  <h2>🧊 Decisions frozen</h2>
+  <table>
+    <tr><th>Decision</th><th>Choice</th><th>Why / upgrade path</th></tr>
+    <tr><td>Optimize for</td><td>Judge throughput</td><td>North star = LeetCode-like scale</td></tr>
+    <tr><td>Deploy</td><td>Self-host Docker Compose on AWS</td><td>Judge0 ≠ serverless; one box at toy scale</td></tr>
+    <tr><td>Multi-tenant DB</td><td>Row-level <code>tenantId</code></td><td>→ RLS → DB-per-tenant for enterprise</td></tr>
+    <tr><td>Result delivery</td><td>Polling</td><td>→ SSE in Phase 2</td></tr>
+    <tr><td>Testcase storage</td><td>Hybrid (PG + S3)</td><td>Small inline, big blobs in S3</td></tr>
+    <tr><td>DSA submit</td><td>Fail-fast</td><td>Cheap, fast feedback</td></tr>
+    <tr><td>Hiring submit</td><td>Run-all</td><td>Full signal for eval report</td></tr>
+    <tr><td>Queue tech</td><td>BullMQ on Redis</td><td>→ SQS/Kafka at Phase 3</td></tr>
+    <tr><td>Delivery semantics</td><td>At-least-once + idempotent worker</td><td>Survives crash / redelivery</td></tr>
+    <tr><td>Profile stats</td><td>On-write counters + outbox; offline percentile</td><td>Cheap reads, no drift</td></tr>
+    <tr><td>Leaderboard</td><td>Redis sorted set</td><td>O(log n) rank</td></tr>
+    <tr><td>DB scaling</td><td>Postgres → replica → shard by userId</td><td>Reads first, shard last</td></tr>
+  </table>
+</section>
+
+<section>
+  <h2>🎤 Interview cheat-sheet (2-sentence pitches)</h2>
+  <div class="cheat"><div class="q">Why a queue?</div><div class="a">Decouples arrival rate from service rate. A 100× contest spike becomes queue depth (graceful latency), not blocked threads and 503s — and the same buffer turns a Judge0 outage into delayed results instead of failures.</div></div>
+  <div class="cheat"><div class="q">Async worker pattern</div><div class="a">Web tier just authenticates, validates, enqueues; a separately-scalable worker pool does the slow work. Scale throughput by adding workers, independent of the API tier.</div></div>
+  <div class="cheat"><div class="q">Idempotency</div><div class="a">Every submission carries a unique idempotencyKey; retries and double-clicks collapse onto one row. One action = exactly one Judge0 run.</div></div>
+  <div class="cheat"><div class="q">Thin payload / claim-check</div><div class="a">Queue message carries only IDs; the worker loads truth from Postgres. Small messages, no stale data.</div></div>
+  <div class="cheat"><div class="q">At-least-once + idempotent consumer</div><div class="a">Crash after Judge0 but before ack → redelivery. The worker refuses to overwrite a DONE submission, so reprocessing is safe.</div></div>
+  <div class="cheat"><div class="q">Error classification</div><div class="a">Property of the submission (compile error, WA, TLE) → valid verdict, no retry. Property of the infra (5xx, timeout) → retry with backoff, then DLQ.</div></div>
+  <div class="cheat"><div class="q">Two Judge0 timeouts</div><div class="a">API-response timeout = is the service alive (infra → retry); wall-clock cap = is the user's code too slow (→ TLE verdict). Don't conflate them.</div></div>
+  <div class="cheat"><div class="q">Result delivery</div><div class="a">202 + jobId, browser polls with backoff to DONE/ERROR; upgrade to SSE so the server pushes the verdict and kills the wasted polls.</div></div>
+  <div class="cheat"><div class="q">AI orchestration</div><div class="a">One orchestrator behind a provider abstraction owns routing, timeouts, retries, caching, circuit breaker, and cost metering; adding an AI feature is a route config, not new glue.</div></div>
+  <div class="cheat"><div class="q">Multi-tenancy</div><div class="a">Row-level tenantId injected by middleware + Postgres RLS as the database-enforced backstop, so a forgotten filter can't leak. Escalate to DB-per-tenant only for enterprise.</div></div>
+  <div class="cheat"><div class="q">Profile stats</div><div class="a">Cheap read-your-write metrics update on write via an outbox (no drift); global/expensive ones (percentile) precompute offline + cache; leaderboards use a Redis sorted set.</div></div>
+  <div class="cheat"><div class="q">Observability</div><div class="a">Correlation ID threaded through every hop turns an async flow into one queryable timeline; RED on the API, USE on workers and Judge0; alert on queue depth, Judge0 p95/errors, DLQ growth.</div></div>
+  <div class="cheat"><div class="q">Security</div><div class="a">Sandbox untrusted code with hard CPU/mem/time limits and no network; auth + per-user/IP/tenant Redis rate limits protect the exec and AI APIs from abuse.</div></div>
+  <div class="cheat"><div class="q">Reliability trio</div><div class="a">Timeouts free threads, retries+backoff self-heal, idempotency makes retries safe — only correct together. Circuit breakers stop hammering a dead dependency.</div></div>
+  <div class="cheat"><div class="q">Complexity analyzer</div><div class="a">You can't statically prove Big-O for arbitrary code (undecidable), so measure it: instrument the code, run on growing input sizes, curve-fit the operation counts to get empirical Big-O with a confidence score. The parsed AST only explains and annotates lines; running the code decides the answer.</div></div>
+</section>
+
+<section>
+  <h2>📐 Frozen capacity &amp; latency targets</h2>
+  <table>
+    <tr><th>Axis</th><th>Phase 1</th><th>Phase 2</th><th>Phase 3 (LC-like)</th></tr>
+    <tr><td>DAU</td><td>~1k</td><td>~50k</td><td>1M+</td></tr>
+    <tr><td>Submissions/day</td><td>~5k</td><td>~200k</td><td>10M+</td></tr>
+    <tr><td>Peak submit QPS</td><td>~5</td><td>~150</td><td>thousands</td></tr>
+  </table>
+  <ul>
+    <li>Run: ack &lt;200ms, result p95 &lt;3s · Submit: result p95 &lt;8s</li>
+    <li>Profile load p95 &lt;300ms (cached) · Report: async &lt;60s</li>
+    <li>Submissions/scores = strong consistency · leaderboard/percentile = eventual</li>
+  </ul>
+</section>
+
+<section>
+  <h2>🔁 Reusable patterns (apply these to ANY system-design question)</h2>
+  <ul>
+    <li><b>Async worker</b> — slow/spiky work → enqueue + worker pool (judge, video encode, email, ML inference)</li>
+    <li><b>Claim-check</b> — big payload → store + pass a reference</li>
+    <li><b>Idempotency key</b> — safe retries for any side-effecting op</li>
+    <li><b>Outbox</b> — atomic "do X + emit event" without distributed transactions</li>
+    <li><b>CQRS / read model</b> — precompute expensive reads, serve O(1)</li>
+    <li><b>Circuit breaker</b> — stop hammering a failing dependency</li>
+    <li><b>Token bucket</b> — burst-tolerant rate limiting, shared in Redis</li>
+    <li><b>Belt + suspenders</b> — convenience layer (app filter) + enforcement layer (RLS); recurs everywhere</li>
+    <li><b>RED + USE</b> — what to measure: requests vs resources</li>
+  </ul>
+</section>
+
+<footer>🎓 16 lessons · built for Hirewave, reusable for any HLD/LLD interview</footer>
+</main>
+</body>
+</html>

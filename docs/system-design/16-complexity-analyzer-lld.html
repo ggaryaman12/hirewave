@@ -1,0 +1,169 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Hirewave — 16 · Complexity Analyzer (LLD)</title><link rel="stylesheet" href="style.css"></head><body>
+<header><div><span class="tag">Hirewave</span><span class="tag">Lesson 16</span><span class="tag">LLD</span><span class="tag">DSA</span></div>
+<h1>Complexity Analyzer — Low-Level Design</h1>
+<p>The three engines: static reader, dynamic measurer, line-by-line simulator. <a href="index.html">← hub</a> · <a href="15-complexity-analyzer-hld.html">← HLD</a></p></header>
+<main>
+
+<section>
+<h2><span class="n">00</span> &nbsp;The plain idea (read this first)</h2>
+<p class="sub">Three modules, each with one job:</p>
+<div class="explain">
+<b>A · Static engine</b> — reads the code into a tree, spots loops and recursion, writes "this line runs ~n times" notes. Fast, runs instantly, only <i>explains</i>.<br><br>
+<b>B · Dynamic profiler</b> — actually runs the code on bigger and bigger inputs, counts the work, and fits a curve to find the real Big-O. This is the <i>truth</i>.<br><br>
+<b>C · Simulator</b> — runs the code once on a tiny input and records every step (which line, what the variables are, how deep the recursion is) so the student can step forward/back like a debugger.
+</div>
+</section>
+
+<section>
+<h2><span class="n">01</span> &nbsp;A · Static engine — the storyteller</h2>
+<p class="sub">Lives in <code>lib/complexity/static/</code>. Pure functions, no running of code. Powers the instant first paint.</p>
+<pre><span class="kw">type</span> <span class="ty">Lang</span> = <span class="str">'cpp'</span> | <span class="str">'java'</span> | <span class="str">'js'</span>;
+
+parseCode(src, lang): <span class="ty">NormalizedAst</span>       <span class="cm">// tree-sitter → uniform tree</span>
+buildControlFlow(ast): <span class="ty">ControlFlowGraph</span>   <span class="cm">// blocks + jumps</span>
+buildCallGraph(ast):   <span class="ty">CallGraph</span>          <span class="cm">// who calls whom (recursion)</span>
+inferComplexity(cfg, cg): <span class="ty">ComplexitySummary</span>
+annotateLines(summary, ast): <span class="ty">LineAnnotation</span>[]</pre>
+<div class="explain">
+<b>Parser = tree-sitter</b> (one grammar each for C++, Java, JS). Why it, not a real compiler? It's incremental, runs in Node via WASM, has a uniform node API across languages, and — crucially — it's <b>error-tolerant</b>, so it still parses half-written code while the student types.
+</div>
+</section>
+
+<section>
+<h2><span class="n">02</span> &nbsp;A · How the Big-O guess is computed (the algebra)</h2>
+<p class="sub">Represent every chunk's cost as a symbolic term like <code>c·n^a·(log n)^b</code>, then combine bottom-up:</p>
+<table>
+<tr><th>Code shape</th><th>Rule</th><th>Result</th></tr>
+<tr><td>Statements in a row</td><td>take the <b>max</b> (biggest wins)</td><td>O(n)+O(1) → O(n)</td></tr>
+<tr><td>Loop inside a loop</td><td><b>multiply</b> the bounds (nesting depth)</td><td>n × n → O(n²)</td></tr>
+<tr><td>if / else</td><td><b>max</b> of the branches (worst case)</td><td>worst arm</td></tr>
+<tr><td>Halving loop <code>i*=2</code></td><td>that loop is <b>log n</b></td><td>O(log n)</td></tr>
+<tr><td>Recursion T(n)=a·T(n/b)+f(n)</td><td><b>Master theorem</b> / Akra–Bazzi</td><td>e.g. mergesort → O(n log n)</td></tr>
+<tr><td>Tree recursion (2 calls, n-1)</td><td>exponential flag</td><td>naive fib → O(2ⁿ)</td></tr>
+<tr><td>Library call (sort, map.find)</td><td>lookup table of known costs</td><td>sort → O(n log n)</td></tr>
+</table>
+<div class="explain">
+The <b>collection-ops table</b> is keyed by (language, type, method): <code>unordered_map.find</code>→O(1), <code>map.find</code>→O(log n), <code>Arrays.sort/std::sort/Array.sort</code>→O(n log n). This same table powers the "suggest a hash map" hint when it sees nested loops doing lookups (the classic 2-sum fix).
+</div>
+</section>
+
+<section>
+<h2><span class="n">03</span> &nbsp;A · What static gets WRONG (be honest)</h2>
+<p class="sub">Always say the limits out loud — it's the mark of someone who understands the problem.</p>
+<ul>
+<li>Data-dependent loops (<code>while (x != target)</code>) — bound unknown.</li>
+<li>Early exits / amortized costs — looks O(n²), really O(n).</li>
+<li>Complexity hidden inside library calls we didn't model.</li>
+<li>Indirect / virtual recursion through interfaces.</li>
+</ul>
+<div class="explain">
+Fallback rule: any unknown bound on a hot path → static reports <code>"≥ O(n) (undetermined)"</code> with a <code>lowConfidence</code> flag. <b>Static never claims a tight bound it can't justify.</b> That's exactly the gap the dynamic measurer fills.
+</div>
+</section>
+
+<section>
+<h2><span class="n">04</span> &nbsp;B · Dynamic profiler — the truth machine</h2>
+<p class="sub">Lives in <code>lib/complexity/dynamic/</code>, runs inside the analyzer worker + sandbox.</p>
+<div class="explain"><b>Step 1 — Instrument the code (add a step-counter):</b><br>
+• <b>JS</b>: rewrite the code (babel) to do <code>__ops++</code> on every statement and <code>__hit[line]++</code> per line. Precise.<br>
+• <b>C++ / Java</b>: insert a counter at the top of each basic block, compile + run with the existing harness. Coarser (block-level) but enough for the curve shape and hotspots. Peak memory comes from the sandbox's existing MLE metering.
+</div>
+<pre><span class="cm">// Step 2 — run on a growing ladder of input sizes</span>
+ladder = [8, 16, 32, 64, 128, 256 … up to cap]
+<span class="kw">for</span> (n <span class="kw">of</span> ladder) {
+  input = genInputForSize(problem, n)          <span class="cm">// reuse in-repo generators</span>
+  { ops, peakMem } = runInstrumented(code, input, limits)
+  record(n, ops, peakMem)
+}
+<span class="cm">// hit a time/op/mem cap → stop early, fit on what we have, flag truncated</span></pre>
+</section>
+
+<section>
+<h2><span class="n">05</span> &nbsp;B · Curve-fitting — turning points into Big-O</h2>
+<p class="sub">We have points (n, ops). Which curve do they follow?</p>
+<div class="explain">
+Try each candidate — <code>1, log n, n, n log n, n², n³, 2ⁿ</code> — fit <code>ops ≈ c·model(n)</code> by least squares, keep the best <b>R²</b>. That R² becomes the <code>confidence</code> shown to the student. Same fit on <code>peakMem(n)</code> gives <b>space</b> Big-O.<br><br>
+<b>The famous trap:</b> n vs n log n look almost identical on a small ladder. Don't trust R² alone — use the <b>ratio test</b>: compute <code>ops(n)/candidate(n)</code> across the ladder; for the <i>true</i> model that ratio stays flat. Pick the model with the lowest ratio-variance.
+</div>
+<pre><span class="kw">reconcile</span>(static, dynamic): <span class="ty">ComplexitySummary</span>
+  agree           → high confidence, cite both
+  disagree        → trust DYNAMIC, explain the gap:
+                    <span class="str">"structure looks O(n²) but measured ~O(n log n)
+                     — likely an early exit or a library sort"</span>
+  static unknown  → dynamic stands alone
+  dynamic skipped → static only, low confidence</pre>
+</section>
+
+<section>
+<h2><span class="n">06</span> &nbsp;C · The simulator — debugger feel</h2>
+<pre><span class="kw">interface</span> <span class="ty">Step</span> {
+  idx: <span class="ty">number</span>; lineNumber: <span class="ty">number</span>;     <span class="cm">// 1-based, aligned to editor</span>
+  variablesSnapshot: <span class="ty">Record</span>&lt;<span class="ty">string</span>,<span class="ty">string</span>&gt;;
+  callStack: { fn: <span class="ty">string</span>; line: <span class="ty">number</span> }[];
+  note?: <span class="ty">string</span>;                       <span class="cm">// "inner loop body, ~n² times total"</span>
+  iterationIndex?: <span class="ty">number</span>; recursionDepth: <span class="ty">number</span>;
+}</pre>
+<div class="explain">
+<b>How steps are made:</b> run ONE small input (n=8), instrumented to emit events (enter-line, write-var, push/pop-call). The worker saves these as <code>SimulationStep</code> rows. Each step shows both "where am I now" (from the run) and "how often does this line run as f(n)" (from the static notes).<br><br>
+<b>Editor integration (Monaco):</b> step.lineNumber maps to the real editor line (the instrumenter never reformats, so line numbers stay aligned). Client uses <code>deltaDecorations</code> to highlight the current line, <b>view zones</b> for the floating bubble, and a side panel for call stack + variables. Stepping forward/back is pure client state over the downloaded steps — <b>zero server calls per step</b>.
+</div>
+</section>
+
+<section>
+<h2><span class="n">07</span> &nbsp;C · Runaway code — infinite loops &amp; deep recursion</h2>
+<div class="explain">
+Same caps as the profiler, plus a <code>MAX_STEPS</code> ceiling (e.g. 5000) and a recursion-depth limit. Exceed any cap → stop, return the partial trace + <code>{ truncated:true, reason:'step_cap' }</code>. UI: "simulation truncated at step 5000 — likely unbounded; static estimate still shown." The student still learns something instead of getting an error.
+</div>
+</section>
+
+<section>
+<h2><span class="n">08</span> &nbsp;Data model &amp; API contracts</h2>
+<pre><span class="kw">model</span> <span class="ty">ComplexityAnalysis</span> {
+  id String @id @default(cuid())
+  codeHash String @unique     <span class="cm">// sha256(code+lang+problemId) — the cache key</span>
+  problemId String;  lang String
+  status String               <span class="cm">// queued|static_ready|done|failed|truncated</span>
+  bigOTime String?;  bigOSpace String?;  confidence Float?
+  summary Json?               <span class="cm">// ComplexitySummary</span>
+  steps SimulationStep[]
+  @@index([problemId])
+}
+<span class="kw">model</span> <span class="ty">SimulationStep</span> {
+  id String @id @default(cuid())
+  analysisId String;  idx Int
+  lineNumber Int;  vars Json;  callStack Json
+  note String?;  recursDepth Int
+  @@unique([analysisId, idx])
+}</pre>
+<pre><span class="cm">POST /api/dsa/complexity   {problemId, lang, code}
+  → {analysisId, status:'static_ready', summary}   // instant paint
+GET  /api/dsa/complexity/:id
+  → {status, summary}                              // poll/SSE until 'done'
+GET  /api/dsa/complexity/:id/simulation?cursor=0&limit=200
+  → {steps[], nextCursor, truncated}</span></pre>
+</section>
+
+<section>
+<h2><span class="n">09</span> &nbsp;🎤 Interview scripts</h2>
+<div class="script"><div class="q">"Static says O(n²), measurement says O(n log n). What do you show?"</div>
+<div class="a">Trust the measurement for the label — dynamic is ground truth. The disagreement isn't a bug, it's a teaching signal: surface it as "structure suggests O(n²) but it measured O(n log n), likely an early exit or a library sort." Reading explains; running decides.</div></div>
+<div class="script"><div class="q">"How do you tell O(n) from O(n log n) empirically?"</div>
+<div class="a">R² alone fails because the curves look alike on small inputs. Use a ratio test: divide measured ops by each candidate model across the input ladder; the true model gives a flat ratio. Pick the lowest ratio-variance, not just the highest R².</div></div>
+<div class="script"><div class="q">"How do you instrument C++/Java safely for per-line counts?"</div>
+<div class="a">Source-transform a counter into each basic block, then compile and run inside the existing sandbox with hard op, time, and memory caps. It's block-level, coarser than JS statement-level, but enough for curve shape and hotspots; peak memory reuses the judge's MLE metering.</div></div>
+</section>
+
+<section>
+<h2><span class="n">10</span> &nbsp;Check yourself</h2>
+<div class="quiz"><div class="q">Q1. Why tree-sitter over a real compiler front-end?</div>
+<div class="a">Uniform node API across languages, runs in Node via WASM, incremental, and error-tolerant so it parses half-written code while the student types.</div></div>
+<div class="quiz"><div class="q">Q2. What does the Master theorem do here?</div>
+<div class="a">Solves recursion cost: from T(n)=a·T(n/b)+f(n) it gives the closed-form Big-O — e.g. mergesort's 2T(n/2)+O(n) → O(n log n). Used in the static pass to label recursive functions.</div></div>
+<div class="quiz"><div class="q">Q3. Why capture the simulation from a tiny input, not the big ones?</div>
+<div class="a">A full trace explodes in size and is unreadable. A small n (≈8) gives a short, followable step sequence; the static notes already tell the student how often each line runs as a function of n.</div></div>
+</section>
+<footer>Hirewave · Lesson 16 · pairs with Lesson 15 (HLD)</footer></main>
+<script>document.querySelectorAll('.quiz').forEach(x=>x.onclick=()=>x.classList.toggle('open'));</script>
+</body></html>

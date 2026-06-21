@@ -1,0 +1,141 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Hirewave — 15 · Complexity Analyzer (HLD)</title><link rel="stylesheet" href="style.css"></head><body>
+<header><div><span class="tag">Hirewave</span><span class="tag">Lesson 15</span><span class="tag">HLD</span><span class="tag">DSA</span></div>
+<h1>Complexity Analyzer &amp; Simulator — High-Level Design</h1>
+<p>"Analyze Complexity" button → measures Big-O of the student's code, explains it line by line. <a href="index.html">← hub</a></p></header>
+<main>
+
+<section>
+<h2><span class="n">00</span> &nbsp;The plain idea (read this first)</h2>
+<p class="sub">A student writes a solution in the editor. They click one button. We tell them: how slow it is (time Big-O), how much memory it uses (space Big-O), and <i>why</i> — by walking through the code like a debugger and pointing at the expensive lines.</p>
+<div class="explain">
+Think of it like a fitness tracker for code. The student runs their solution; we strap a step-counter on it, run it on inputs that grow bigger and bigger, and watch how fast the work grows. If doubling the input roughly doubles the work → that's <b>O(n)</b>. If doubling it <i>quadruples</i> the work → <b>O(n²)</b>. We literally <b>measure</b> it, then explain it.
+</div>
+</section>
+
+<section>
+<h2><span class="n">01</span> &nbsp;The one hard truth (your best interview line)</h2>
+<p class="sub">You cannot prove the Big-O of arbitrary code just by reading it. That is mathematically impossible — it reduces to the halting problem (Rice's theorem). Any tool claiming to "statically prove" complexity for all code is lying.</p>
+<div class="explain">
+So the whole design flips: <b>measurement is the truth, reading-the-code is only the explanation.</b><br><br>
+• <b>Dynamic profiling</b> (running the code on growing inputs) = ground truth for the Big-O number.<br>
+• <b>Static analysis</b> (parsing the code into a tree) = the storyteller that says "this line runs ~n² times because it's a loop inside a loop." It labels and explains; it does <i>not</i> decide the final answer.
+</div>
+</section>
+
+<section>
+<h2><span class="n">02</span> &nbsp;Where it lives in Hirewave</h2>
+<div class="flow">
+<div class="node"><b>Browser</b><small>Monaco editor · /dsa/[problem]</small></div>
+<div class="arrow"></div>
+<div class="node"><b>Next.js API</b><small>/api/dsa/complexity</small></div>
+<div class="arrow"></div>
+<div class="node active"><b>Analyzer Service</b><small>static (fast) + enqueue dynamic</small></div>
+<div class="arrow"></div>
+<div class="node"><b>Analyzer Workers</b><small>own pool · own queue</small></div>
+<div class="arrow"></div>
+<div class="node"><b>Sandbox</b><small>reuse Judge0 / local-provider</small></div>
+</div>
+<div class="explain">
+It is a <b>sibling</b> of the judge, not part of it. It reuses the same secure sandbox to run code (no second security model to build), but it gets its <b>own worker pool and queue</b> so a flood of "Analyze" clicks can never starve real Run/Submit traffic. Same trick as Lesson 03's worker — just a separate lane.
+</div>
+</section>
+
+<section>
+<h2><span class="n">03</span> &nbsp;The request flow (two-phase — the key UX move)</h2>
+<p class="sub">Static is instant; dynamic is slow (it runs code many times). So we answer twice: fast then accurate.</p>
+<div class="flow">
+<div class="node"><b>1. Click</b><small>send {problemId, lang, code}</small></div>
+<div class="arrow"></div>
+<div class="node active"><b>2. Static, &lt;300ms</b><small>parse → annotate lines → paint NOW</small></div>
+<div class="arrow"></div>
+<div class="node"><b>3. Enqueue</b><small>dynamic job by code-hash</small></div>
+<div class="arrow"></div>
+<div class="node"><b>4. Measure</b><small>run n=8,16,32… curve-fit</small></div>
+<div class="arrow"></div>
+<div class="node"><b>5. Stream back</b><small>real Big-O + simulation steps</small></div>
+</div>
+<div class="explain">
+The editor lights up with per-line notes <b>immediately</b> from the static pass. The measured Big-O and the step-through debugger arrive a moment later and replace the guesses. Student never stares at a spinner.
+</div>
+</section>
+
+<section>
+<h2><span class="n">04</span> &nbsp;What comes back (the result shape)</h2>
+<pre><span class="kw">interface</span> <span class="ty">ComplexitySummary</span> {
+  bigOTime:    <span class="ty">string</span>;   <span class="cm">// "O(n^2)"  — MEASURED, the real answer</span>
+  bigOSpace:   <span class="ty">string</span>;   <span class="cm">// "O(n)"</span>
+  confidence:  <span class="ty">number</span>;   <span class="cm">// curve-fit R² (0–1) — honesty meter</span>
+  staticGuess: { time: <span class="ty">string</span>; space: <span class="ty">string</span> };  <span class="cm">// from reading the code</span>
+  explanation: <span class="ty">string</span>;   <span class="cm">// "outer loop n × inner loop n → n²"</span>
+  hotspots:    { line: <span class="ty">number</span>; share: <span class="ty">number</span> }[];   <span class="cm">// expensive lines</span>
+  perLine:     <span class="ty">LineAnnotation</span>[];   <span class="cm">// one note per editor line</span>
+  suggestion?: <span class="ty">string</span>;   <span class="cm">// "use a hash map → O(n)"</span>
+}
+<span class="kw">interface</span> <span class="ty">LineAnnotation</span> {
+  line: <span class="ty">number</span>; executed: <span class="ty">string</span>;   <span class="cm">// "~n times"</span>
+  timeFactor: <span class="ty">string</span>; spaceImpact: <span class="ty">string</span>;
+  note: <span class="ty">string</span>; inLoop: <span class="ty">boolean</span>; inRecursion: <span class="ty">boolean</span>;
+}</pre>
+<div class="explain">
+<code>confidence</code> is the trust feature. We show "measured ~O(n²) <b>(high confidence)</b>", never a bare claim. If we ran wrong code, showing a confident wrong answer is worse than no feature — so we always expose how sure we are.
+</div>
+</section>
+
+<section>
+<h2><span class="n">05</span> &nbsp;Three big concerns</h2>
+<table>
+<tr><th>Concern</th><th>Risk</th><th>Decision</th></tr>
+<tr><td>Performance</td><td>Re-analyzing on every keystroke melts the box</td><td>On-click only + debounce; <b>cache by code-hash</b> (same code → instant reuse)</td></tr>
+<tr><td>Security</td><td>We run untrusted student code</td><td>Reuse the judge sandbox (hard CPU/mem/time caps, no network) — don't invent a new one</td></tr>
+<tr><td>Scale</td><td>Everyone clicks Analyze during a contest</td><td>Dedicated analyzer worker pool + queue, isolated from Run/Submit; bounded input ladder</td></tr>
+</table>
+</section>
+
+<section>
+<h2><span class="n">06</span> &nbsp;ASCII architecture (one picture to memorize)</h2>
+<pre><span class="cm">Browser (Monaco)
+  │ click "Analyze"  {problemId, lang, code}
+  ▼
+Next.js API  /api/dsa/complexity
+  │  codeHash = sha256(code+lang+problemId)
+  │  cache hit? ─► return instantly
+  │  STATIC pass (sync &lt;300ms): parse → AST → CFG → per-line notes
+  │  return static result NOW, enqueue dynamic job
+  ▼
+[ Analyzer Queue ]  ── separate from judge queue
+  ▼
+Analyzer Worker (own pool)
+  │  for n in 8,16,32,64…:  instrument → run in SANDBOX → count ops, mem
+  │  curve-fit ops(n) → empirical Big-O + confidence
+  │  reconcile(static, dynamic) → summary
+  │  capture one small-n trace → simulation steps
+  ▼
+DB: ComplexityAnalysis (by codeHash) + SimulationStep
+  ▲
+Browser polls GET /api/dsa/complexity/:id  → renders overlays + step debugger</span></pre>
+</section>
+
+<section>
+<h2><span class="n">07</span> &nbsp;🎤 Interview scripts</h2>
+<div class="script"><div class="q">"Design a LeetCode-style complexity visualizer."</div>
+<div class="a">Start with the hard truth: you can't statically prove Big-O for arbitrary code, so the system is measurement-first. Instrument the code, run it across growing input sizes in a sandbox, count operations, and curve-fit the growth to get the empirical Big-O with a confidence score. Use a parsed AST only to attach per-line explanations and detect loop nesting and recursion. Two-phase response: instant static annotations, then the measured result streams in.</div></div>
+<div class="script"><div class="q">"How do you estimate complexity of arbitrary user code?"</div>
+<div class="a">I don't trust reading the code — that's undecidable. I measure: run on n = 8, 16, 32… count ops per run, fit the points against a ladder of candidate curves (1, log n, n, n log n, n², 2ⁿ), and pick the best fit by R². The AST is only the storyteller that explains the shape.</div></div>
+<div class="script"><div class="q">"How do you stop Analyze from killing the judge under load?"</div>
+<div class="a">On-click only with debounce, never per-keystroke. Cache results by code-hash so repeats are free. Give the analyzer its own worker pool and queue, isolated from Run/Submit, so a contest spike of Analyze clicks degrades into queue depth, not failed submissions.</div></div>
+</section>
+
+<section>
+<h2><span class="n">08</span> &nbsp;Check yourself</h2>
+<div class="quiz"><div class="q">Q1. Why is dynamic the source of truth, not static?</div>
+<div class="a">Because inferring exact Big-O from arbitrary source is undecidable (halting problem). Running the code and measuring growth is concrete; reading it can only guess and explain.</div></div>
+<div class="quiz"><div class="q">Q2. Why answer in two phases?</div>
+<div class="a">Static is instant but approximate; dynamic is accurate but slow. Paint static annotations immediately so the UI is responsive, then replace them with the measured result when the worker finishes.</div></div>
+<div class="quiz"><div class="q">Q3. Why a separate worker pool from the judge?</div>
+<div class="a">So a flood of Analyze clicks can't starve real Run/Submit traffic. Isolated lanes = a spike in one becomes latency there, not failures everywhere.</div></div>
+</section>
+<footer>Hirewave · Lesson 15 · next: 16 · Complexity Analyzer (LLD)</footer></main>
+<script>document.querySelectorAll('.quiz').forEach(x=>x.onclick=()=>x.classList.toggle('open'));</script>
+</body></html>
