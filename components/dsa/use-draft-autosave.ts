@@ -1,5 +1,7 @@
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import type { Language } from '@/lib/constants';
+
+export type SaveState = 'saved' | 'saving';
 
 // Local-first write-behind autosave for the DSA editor.
 //   - localStorage (debounced ~500ms): instant, free, survives reload + offline.
@@ -33,6 +35,11 @@ export function useDraftAutosave(params: {
   onRecover: (language: Language, source: string) => void;
 }) {
   const { slug, language, source, authed } = params;
+
+  // Save status for the UI indicator. 'saving' while a change is pending the
+  // localStorage write (the reload-safety guarantee); 'saved' once persisted.
+  const [status, setStatus] = useState<SaveState>('saved');
+  const localSaved = useRef(source); // last value written to localStorage
 
   const lastServerSource = useRef<string | null>(null);
   const localTimer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
@@ -84,9 +91,13 @@ export function useDraftAutosave(params: {
   useEffect(() => {
     if (typeof window === 'undefined') return;
 
+    if (source !== localSaved.current) setStatus('saving');
+
     clearTimeout(localTimer.current);
     localTimer.current = setTimeout(() => {
       window.localStorage.setItem(localKey(slug, language), JSON.stringify({ source, t: Date.now() }));
+      localSaved.current = source;
+      setStatus('saved');
     }, LOCAL_DEBOUNCE_MS);
 
     clearTimeout(serverTimer.current);
@@ -125,4 +136,6 @@ export function useDraftAutosave(params: {
     document.addEventListener('visibilitychange', onHide);
     return () => document.removeEventListener('visibilitychange', onHide);
   }, [authed]);
+
+  return { status };
 }

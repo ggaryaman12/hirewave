@@ -127,7 +127,7 @@ export function ProblemWorkspace({ slug, problem, authed }: { slug: string; prob
   const applyRecoveredDraft = (lang: Language, recovered: string) => {
     setSources((prev) => (prev[lang] === problem.boilerplates[lang] ? { ...prev, [lang]: recovered } : prev));
   };
-  useDraftAutosave({ slug, language, source, authed, onRecover: applyRecoveredDraft });
+  const { status: saveStatus } = useDraftAutosave({ slug, language, source, authed, onRecover: applyRecoveredDraft });
 
   async function runSamples() {
     if (!source.trim() || pending) return;
@@ -323,6 +323,18 @@ export function ProblemWorkspace({ slug, problem, authed }: { slug: string; prob
               </select>
             </label>
             <div className="flex items-center gap-2">
+              <span
+                className="flex items-center gap-1.5 text-[11px] font-semibold text-white/40"
+                title="Your code autosaves to this browser; signed-in users also sync across devices."
+              >
+                <span
+                  className={cn(
+                    'h-1.5 w-1.5 rounded-full',
+                    saveStatus === 'saving' ? 'animate-pulse bg-amber-400' : 'bg-emerald-400',
+                  )}
+                />
+                {saveStatus === 'saving' ? 'Saving…' : 'Saved'}
+              </span>
               <button
                 type="button"
                 disabled={pending}
