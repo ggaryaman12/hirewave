@@ -445,3 +445,31 @@ model InviteLink {
   assessment   Assessment         @relation(fields: [assessmentId], references: [id], onDelete: Cascade)
   sessions     CandidateSession[]
 }
+
+model ComplexityAnalysisV2 {
+  id         String   @id @default(cuid())
+  codeHash   String   @unique
+  problemId  String
+  lang       String
+  status     String   // done | failed | unsupported_language | truncated
+  bigOTime   String?
+  bigOSpace  String?
+  confidence Float?
+  summary    String?  // JSON-serialized ComplexitySummary
+  createdAt  DateTime @default(now())
+  steps      SimulationStepV2[]
+  @@index([problemId])
+}
+
+model SimulationStepV2 {
+  id          String @id @default(cuid())
+  analysisId  String
+  idx         Int
+  lineNumber  Int
+  recursDepth Int     @default(0)
+  callStack   String  @default("[]")  // JSON string[]
+  variables   String  @default("{}")  // JSON Record<string,string>
+  note        String?
+  analysis    ComplexityAnalysisV2 @relation(fields: [analysisId], references: [id], onDelete: Cascade)
+  @@unique([analysisId, idx])
+}
