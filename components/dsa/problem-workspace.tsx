@@ -7,6 +7,7 @@ import { ArrowLeft, Building2, Clock, Cpu, Lightbulb, Play, RotateCcw, Send, Tag
 import { cn } from '@/lib/utils';
 import { useDraftAutosave } from './use-draft-autosave';
 import { Language, Verdict } from '@/lib/constants';
+import { LANGUAGE_LIST } from '@/lib/languages';
 
 // Monaco is browser-only — load it client-side without SSR.
 const MonacoEditor = dynamic(() => import('@monaco-editor/react').then((m) => m.default), {
@@ -35,17 +36,16 @@ export type ProblemPayload = {
   samples: ProblemSample[];
 };
 
-const LANGUAGES: { value: Language; label: string }[] = [
-  { value: Language.CPP, label: 'C++' },
-  { value: Language.JAVA, label: 'Java' },
-  { value: Language.JAVASCRIPT, label: 'JavaScript' },
-];
+// Derived from the language registry — a new first-class language appears in the
+// picker and editor automatically, no edits here.
+const LANGUAGES: { value: Language; label: string }[] = LANGUAGE_LIST.map((def) => ({
+  value: def.id,
+  label: def.label,
+}));
 
-const MONACO_LANGUAGE: Record<Language, string> = {
-  [Language.CPP]: Language.CPP,
-  [Language.JAVA]: Language.JAVA,
-  [Language.JAVASCRIPT]: Language.JAVASCRIPT,
-};
+const MONACO_LANGUAGE = Object.fromEntries(
+  LANGUAGE_LIST.map((def) => [def.id, def.monacoId]),
+) as Record<Language, string>;
 
 // Shape returned by runSamples (samples are public, so input/expected/stdout are present).
 type RunResult = {

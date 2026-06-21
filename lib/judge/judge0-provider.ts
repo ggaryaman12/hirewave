@@ -1,3 +1,4 @@
+import { LANGUAGE_LIST } from '@/lib/languages';
 import type { JudgeProvider, JudgeRunInput, JudgeRunResult, JudgeRunStatus } from '@/lib/judge/types';
 
 // Judge0 client (works with self-hosted Judge0 or the public CE at
@@ -13,11 +14,11 @@ import type { JudgeProvider, JudgeRunInput, JudgeRunResult, JudgeRunStatus } fro
 //      JUDGE0_MAX_ATTEMPTS (default 4), JUDGE0_POLL_ATTEMPTS (default 10).
 
 const LANGUAGE_IDS: Record<string, number> = {
+  // First-class languages: canonical ids come from the language registry.
+  ...Object.fromEntries(LANGUAGE_LIST.map((def) => [def.id, def.judge0Id])),
+  // Passthrough aliases Judge0 also understands (not first-class in the harness).
   c: 50,
-  cpp: 54,
   'c++': 54,
-  java: 62,
-  javascript: 63,
   node: 63,
   python: 71,
   python3: 71,

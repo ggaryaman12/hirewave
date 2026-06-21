@@ -1,5 +1,6 @@
 import { compareOutput } from '@/lib/judge/compare';
 import { JudgeRunStatus, Verdict } from '@/lib/constants';
+import { getLanguageDef } from '@/lib/languages';
 import type { ComparisonPolicy, GradeResult, JudgeRunFn, TestCaseResult } from '@/lib/judge/types';
 
 export type GradeProblem = {
@@ -12,17 +13,6 @@ export type GradeProblem = {
 };
 
 export type GradeTestCase = { input: string; expected: string };
-
-// Interpreted languages need more wall-clock headroom so a correct solution is
-// not falsely TLE'd. Conservative multipliers.
-const LANGUAGE_TIME_FACTOR: Record<string, number> = {
-  python: 3,
-  python3: 3,
-  javascript: 2,
-  node: 2,
-  ruby: 3,
-  java: 2,
-};
 
 function runStatusToVerdict(status: JudgeRunStatus): Verdict {
   switch (status) {
@@ -48,7 +38,9 @@ export async function gradeSubmission(
   testCases: GradeTestCase[],
   run: JudgeRunFn,
 ): Promise<GradeResult> {
-  const timeFactor = LANGUAGE_TIME_FACTOR[problem.language.toLowerCase()] ?? 1;
+  // Slower runtimes (interpreted/JVM) get wall-clock headroom so a correct
+  // solution isn't falsely TLE'd. Factor comes from the language registry.
+  const timeFactor = getLanguageDef(problem.language)?.timeFactor ?? 1;
   const timeLimitMs = Math.round(problem.timeLimitMs * timeFactor);
   const results: TestCaseResult[] = [];
 
