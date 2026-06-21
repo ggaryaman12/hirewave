@@ -3,11 +3,12 @@ import { ArrowRight, Check, Code2, Layers, CircleDot, Trophy } from 'lucide-reac
 import { db } from '@/lib/db';
 import { getCurrentUser } from '@/lib/auth/session';
 import { cn } from '@/lib/utils';
+import { Difficulty } from '@/lib/constants';
 
 const DIFFICULTY_STYLES: Record<string, string> = {
-  easy: 'bg-emerald-500/15 text-emerald-200',
-  medium: 'bg-amber-500/15 text-amber-200',
-  hard: 'bg-red-500/15 text-red-200',
+  [Difficulty.EASY]: 'bg-emerald-500/15 text-emerald-200',
+  [Difficulty.MEDIUM]: 'bg-amber-500/15 text-amber-200',
+  [Difficulty.HARD]: 'bg-red-500/15 text-red-200',
 };
 
 function difficultyClass(difficulty: string) {
