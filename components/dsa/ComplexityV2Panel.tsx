@@ -1,5 +1,5 @@
 'use client';
-import { useState } from 'react';
+import { useState, useRef } from 'react';
 import './complexity-v2.css';
 
 interface Summary {
@@ -17,6 +17,7 @@ export function ComplexityV2Panel(props: {
   const [loading, setLoading] = useState(false);
   const [summary, setSummary] = useState<Summary | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const decoRef = useRef<string[]>([]);
 
   async function analyze() {
     setLoading(true); setError(null); setSummary(null);
@@ -40,7 +41,7 @@ export function ComplexityV2Panel(props: {
     const ed = props.editorRef?.current;
     const monaco = (window as any).monaco;
     if (!ed?.deltaDecorations || !monaco) return;
-    ed.deltaDecorations([], hotspots.map((h) => ({
+    decoRef.current = ed.deltaDecorations(decoRef.current, hotspots.map((h) => ({
       range: new monaco.Range(h.line, 1, h.line, 1),
       options: { isWholeLine: true, className: 'cx-hotspot', glyphMarginClassName: 'cx-hot-glyph' },
     })));

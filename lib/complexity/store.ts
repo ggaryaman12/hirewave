@@ -28,8 +28,8 @@ export async function saveAnalysis(input: {
       confidence: input.summary?.confidence, summary: input.summary ? JSON.stringify(input.summary) : null,
     },
   });
+  await db.simulationStepV2.deleteMany({ where: { analysisId: row.id } });
   if (input.steps.length) {
-    await db.simulationStepV2.deleteMany({ where: { analysisId: row.id } });
     await db.simulationStepV2.createMany({
       data: input.steps.slice(0, 5000).map((s) => ({
         analysisId: row.id, idx: s.idx, lineNumber: s.lineNumber, recursDepth: s.recursionDepth,
