@@ -1,0 +1,12 @@
+.cx-hotspot { background: rgba(255,170,0,.14); }
+.cx-current { background: rgba(80,160,255,.20); }
+.cx-hot-glyph::after { content: '🔥'; }
+.cx-panel { border:1px solid var(--border,#283143); border-radius:10px; padding:10px; margin-top:10px; }
+.cx-head { display:flex; align-items:center; justify-content:space-between; gap:8px; }
+.cx-panel button { padding:6px 12px; border-radius:8px; }
+.cx-bigo { display:flex; gap:16px; font-family:monospace; margin:6px 0; }
+.cx-err { color:#e66; } .cx-suggest { color:#7bdcb5; } .cx-muted { opacity:.7; font-size:12px; }
+.cx-sim { margin-top:8px; border-top:1px solid var(--border,#283143); padding-top:8px; }
+.cx-sim-ctrls { display:flex; gap:6px; align-items:center; }
+.cx-vars { font-family:monospace; font-size:12px; white-space:pre-wrap; }
+.cx-stack { font-family:monospace; font-size:12px; opacity:.85; }
