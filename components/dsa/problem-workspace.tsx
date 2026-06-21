@@ -1,6 +1,6 @@
 'use client';
 
-import { Fragment, useState } from 'react';
+import { Fragment, useState, useRef } from 'react';
 import dynamic from 'next/dynamic';
 import Link from 'next/link';
 import { ArrowLeft, Building2, Clock, Cpu, Lightbulb, Play, RotateCcw, Send, Tag } from 'lucide-react';
@@ -8,6 +8,8 @@ import { cn } from '@/lib/utils';
 import { useDraftAutosave } from './use-draft-autosave';
 import { Language, Verdict } from '@/lib/constants';
 import { LANGUAGE_LIST } from '@/lib/languages';
+import { ComplexityV2Panel } from '@/components/dsa/ComplexityV2Panel';
+import { ComplexitySimulator } from '@/components/dsa/ComplexitySimulator';
 
 // Monaco is browser-only — load it client-side without SSR.
 const MonacoEditor = dynamic(() => import('@monaco-editor/react').then((m) => m.default), {
@@ -116,6 +118,8 @@ export function ProblemWorkspace({ slug, problem, authed }: { slug: string; prob
   const [submitResult, setSubmitResult] = useState<SubmitResponse | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [hintsShown, setHintsShown] = useState(0);
+  const editorRef = useRef<any>(null);
+  const [v2AnalysisId, setV2AnalysisId] = useState<string | null>(null);
 
   const source = sources[language];
   const setSource = (value: string) => setSources((prev) => ({ ...prev, [language]: value }));
@@ -384,6 +388,7 @@ export function ProblemWorkspace({ slug, problem, authed }: { slug: string; prob
               theme="vs-dark"
               value={source}
               onChange={(value) => setSource(value ?? '')}
+              onMount={(editor, monaco) => { editorRef.current = editor; (window as any).monaco = monaco; }}
               options={{
                 fontSize: 13,
                 minimap: { enabled: false },
@@ -419,6 +424,12 @@ export function ProblemWorkspace({ slug, problem, authed }: { slug: string; prob
             {submitResult && <SubmitResultView data={submitResult} />}
             {submitResult && submitResult.verdict === Verdict.ACCEPTED && problem.functionMode && (
               <ComplexitySection slug={slug} submissionId={submitResult.submissionId} />
+            )}
+            {problem.functionMode && (
+              <div className="mt-3">
+                <ComplexityV2Panel slug={slug} language={language as string} code={source} editorRef={editorRef} onAnalyzed={setV2AnalysisId} />
+                {v2AnalysisId && <ComplexitySimulator slug={slug} analysisId={v2AnalysisId} editorRef={editorRef} />}
+              </div>
             )}
           </div>
         </section>
