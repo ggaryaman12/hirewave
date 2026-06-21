@@ -8,7 +8,7 @@ import type { ComplexitySummary, SimStep } from '@/lib/complexity/types';
 
 const MAX_CASES = 24;
 
-export function analyzeComplexity(input: { code: string; lang: string; cases: { stdin: string }[] }):
+export function analyzeComplexity(input: { code: string; runnable?: string; lang: string; cases: { stdin: string }[] }):
   { summary: ComplexitySummary; steps: SimStep[]; status: 'done' | 'failed' } {
 
   const stat = analyzeStaticJs(input.code);
@@ -25,12 +25,16 @@ export function analyzeComplexity(input: { code: string; lang: string; cases: { 
   let smallestN = Infinity;
 
   for (const c of sample) {
-    const t = runInstrumented(input.code, c.stdin);
+    const t = runInstrumented(input.runnable ?? input.code, c.stdin);
     if (!t.ok || t.ops === 0) continue;
     timePts.push({ n: c.n, ops: t.ops });
     spacePts.push({ n: c.n, ops: Object.keys(t.hits).length }); // proxy: distinct active lines ~ allocation breadth
     if (c.n < smallestN) { smallestN = c.n; smallestSteps = t.steps; }
   }
+
+  // Clip captured steps to user-code lines so the simulator stays aligned.
+  const userLines = input.code.split('\n').length;
+  smallestSteps = smallestSteps.filter(s => s.lineNumber <= userLines);
 
   if (timePts.length < 3) {
     // Fall back to static-only.
