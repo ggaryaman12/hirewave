@@ -1,13 +1,15 @@
 import { NextRequest, NextResponse } from 'next/server';
-import bcrypt from 'bcryptjs';
 import { z } from 'zod';
 import { db } from '@/lib/db';
 import { checkRateLimit } from '@/lib/auth/rate-limit';
+import { registerUser } from '@/lib/auth/register';
 
 const schema = z.object({
   name: z.string().trim().min(1).max(80),
   email: z.string().email().max(200),
   password: z.string().min(8).max(200),
+  role: z.enum(['student', 'recruiter']).default('student'),
+  company: z.string().trim().max(80).optional(),
 });
 
 export async function POST(request: NextRequest) {
@@ -29,8 +31,13 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: 'An account with this email already exists.' }, { status: 409 });
   }
 
-  const passwordHash = await bcrypt.hash(body.password, 10);
-  await db.user.create({ data: { name: body.name, email, passwordHash, role: 'student' } });
+  const user = await registerUser({
+    name: body.name,
+    email,
+    password: body.password,
+    role: body.role,
+    company: body.company,
+  });
 
-  return NextResponse.json({ ok: true }, { status: 201 });
+  return NextResponse.json({ ok: true, role: user.role }, { status: 201 });
 }
